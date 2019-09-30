@@ -89,7 +89,7 @@ fun fromInt (x:int) =
     else S(fromInt(x-1))
 
 
-fun test t = 
+fun toInt t = 
   let 
     fun positive (S Z) = 1
         | positive (S x) = positive(x)+1
