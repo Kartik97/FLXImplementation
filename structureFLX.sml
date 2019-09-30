@@ -72,9 +72,16 @@ fun fromString "" = raise Not_wellformed
       in if(List.length(tokens) <> 0 orelse List.length(term) <> 1) then raise Not_wellformed
           else hd(term)
       end
- 
 
-
+fun toString (VAR str) = str
+    | toString Z = "Z"
+    | toString T = "T"
+    | toString F = "F"
+    | toString (P (x)) = "(P "^toString(x)^")"
+    | toString (S (x)) = "(S "^toString(x)^")"
+    | toString (IZ (x)) = "(IZ "^toString(x)^")"
+    | toString (GTZ (x)) = "(GTZ "^toString(x)^")"
+    | toString (ITE (x1,x2,x3)) = "(ITE <"^toString(x1)^","^toString(x2)^","^toString(x3)^">)" 
 
 
 
