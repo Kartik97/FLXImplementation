@@ -1,5 +1,5 @@
 exception Not_wellformed
-exception Not_nf
+exception Nost_nf
 exception Not_int
 datatype term = VAR of string (* variable *)
                 | Z           (* zero *)
@@ -67,7 +67,48 @@ fun fromString "" = raise Not_wellformed
                           | findPrev (head::tail,stTerms) = findPrev(tail,createTerm(head,stTerms))
                   in findPrev (stkTokens,stkTerms)
                   end   
+
         val (tokens,term) = parser(tokenised,[],[])
       in if(List.length(tokens) <> 0 orelse List.length(term) <> 1) then raise Not_wellformed
-          else term
+          else hd(term)
       end
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
