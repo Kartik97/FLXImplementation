@@ -1,5 +1,5 @@
 exception Not_wellformed
-exception Nost_nf
+exception Not_nf
 exception Not_int
 datatype term = VAR of string (* variable *)
                 | Z           (* zero *)
@@ -83,13 +83,28 @@ fun toString (VAR str) = str
     | toString (GTZ (x)) = "(GTZ "^toString(x)^")"
     | toString (ITE (x1,x2,x3)) = "(ITE <"^toString(x1)^","^toString(x2)^","^toString(x3)^">)" 
 
-
 fun fromInt (x:int) =
     if (x = 0) then Z
     else if(x < 0) then P(fromInt(x+1))
     else S(fromInt(x-1))
 
 
+fun test t = 
+  let 
+    fun positive (S Z) = 1
+        | positive (S x) = positive(x)+1
+        | positive (P x) = raise Not_nf
+        | positive _ = raise Not_int
+    fun negative (P Z) = ~1
+        | negative (P x) = negative(x)-1
+        | negative (S x) = raise Not_nf
+        | negative _ = raise Not_int 
+    fun calculate (P x) = negative (P x)
+        | calculate (S x) = positive (S x)
+        | calculate Z = 0
+        | calculate _ = raise Not_int
+  in calculate(t) 
+  end
 
 
 
