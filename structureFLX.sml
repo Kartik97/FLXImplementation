@@ -84,7 +84,10 @@ fun toString (VAR str) = str
     | toString (ITE (x1,x2,x3)) = "(ITE <"^toString(x1)^","^toString(x2)^","^toString(x3)^">)" 
 
 
-
+fun fromInt (x:int) =
+    if (x = 0) then Z
+    else if(x < 0) then P(fromInt(x+1))
+    else S(fromInt(x-1))
 
 
 
