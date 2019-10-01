@@ -11,6 +11,8 @@ datatype term = VAR of string (* variable *)
                 | IZ of term  (* is zero *)
                 | GTZ of term (* is greater than zero *)
 
+val t1 = "(ITE <(ITE <(GTZ (S Z)),Z,(IZ (S Z))>),(S (S x)),(S (S (P Z)))>)"
+
 fun fromString "" = raise Not_wellformed
     | fromString s = 
       let
@@ -128,7 +130,7 @@ in
       | normalize (S x) = S(normalize x)
       | normalize (ITE (T,y,z)) = normalize y
       | normalize (ITE (F,y,z)) = normalize z
-      | normalize (ITE (x,y,z)) = if (y = z) then normalize (y)
+      | normalize (ITE (x,y,z)) = if (normalize(y) = normalize(z)) then normalize (y)
                              else if (normalize(x) = T) then normalize(y)
                              else if (normalize(x) = F) then normalize(z) 
                              else ITE(normalize(x),normalize(y),normalize(z))
