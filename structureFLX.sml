@@ -18,7 +18,8 @@ fun fromString "" = raise Not_wellformed
 
         val lst = explode(s) 
 
-        fun tokens ([],tokenList,curr) = tokenList
+        fun tokens ([],tokenList,curr) = if (curr <> "") then curr::tokenList
+                                          else tokenList
           | tokens (x::t,tokenList,curr) =
           if (String.str(x) = "(" orelse String.str(x) = "<")  then
             String.str(x)::tokens(t,tokenList,"")
