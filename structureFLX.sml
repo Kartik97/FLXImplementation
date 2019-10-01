@@ -92,7 +92,6 @@ fun fromInt (x:int) =
     else if(x < 0) then P(fromInt(x+1))
     else S(fromInt(x-1))
 
-
 fun toInt t = 
   let 
     fun positive (S Z) = 1
@@ -110,20 +109,34 @@ fun toInt t =
   in calculate(t) 
   end
 
+local
+  fun checkSuccessor Z = true
+      | checkSuccessor (S x) = checkSuccessor x
+      | checkSuccessor _ = false
 
-fun test (VAR str) = VAR str
-    | test Z = Z
-    | test T = T
-    | test F = F
-    | test (P (S x)) = test x
-    | test (S (P x)) = test x
-    | test (P x) = P(test x)
-    | test (S x) = S(test x)
-    | test (ITE (T,y,z)) = y
-    | test (ITE (F,y,z)) = z
-    | test (ITE (x,y,z)) = if (y = z) then test (y)
-                           else if (test(x) = T) then test(y)
-                           else if (test(x) = F) then test(z) 
-                           else ITE(test(x),test(y),test(z))
-
-
+  fun checkPredeccessor Z = true
+      | checkPredeccessor (P x) = checkPredeccessor x
+      | checkPredeccessor _ = false
+in
+  fun normalize (VAR str) = VAR str
+      | normalize Z = Z
+      | normalize T = T
+      | normalize F = F
+      | normalize (P (S x)) = normalize x
+      | normalize (S (P x)) = normalize x
+      | normalize (P x) = P(normalize x)
+      | normalize (S x) = S(normalize x)
+      | normalize (ITE (T,y,z)) = normalize y
+      | normalize (ITE (F,y,z)) = normalize z
+      | normalize (ITE (x,y,z)) = if (y = z) then normalize (y)
+                             else if (normalize(x) = T) then normalize(y)
+                             else if (normalize(x) = F) then normalize(z) 
+                             else ITE(normalize(x),normalize(y),normalize(z))
+      | normalize (IZ Z) = T
+      | normalize (IZ x) = if (checkSuccessor(normalize(x)) orelse checkPredeccessor(normalize(x))) then F
+                      else (IZ (normalize(x)))
+      | normalize (GTZ Z) = F
+      | normalize (GTZ x) = if (checkSuccessor(normalize(x))) then T
+                      else if (checkPredeccessor(normalize(x))) then F
+                      else (GTZ (normalize(x)))
+end
