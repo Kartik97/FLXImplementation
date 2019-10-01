@@ -15,7 +15,9 @@ fun fromString "" = raise Not_wellformed
     | fromString s = 
       let
         val cons = ["Z","T","F","P","S","ITE","IZ","GTZ"]
+
         val lst = explode(s) 
+
         fun tokens ([],tokenList,curr) = tokenList
           | tokens (x::t,tokenList,curr) =
           if (String.str(x) = "(" orelse String.str(x) = "<")  then
@@ -69,6 +71,7 @@ fun fromString "" = raise Not_wellformed
                   end   
 
         val (tokens,term) = parser(tokenised,[],[])
+
       in if(List.length(tokens) <> 0 orelse List.length(term) <> 1) then raise Not_wellformed
           else hd(term)
       end
@@ -107,33 +110,19 @@ fun toInt t =
   end
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+fun test (VAR str) = VAR str
+    | test Z = Z
+    | test T = T
+    | test F = F
+    | test (P (S x)) = test x
+    | test (S (P x)) = test x
+    | test (P x) = P(test x)
+    | test (S x) = S(test x)
+    | test (ITE (T,y,z)) = y
+    | test (ITE (F,y,z)) = z
+    | test (ITE (x,y,z)) = if (y = z) then test (y)
+                           else if (test(x) = T) then test(y)
+                           else if (test(x) = F) then test(z) 
+                           else ITE(test(x),test(y),test(z))
 
 
