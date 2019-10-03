@@ -119,26 +119,34 @@ local
   fun checkPredeccessor Z = true
       | checkPredeccessor (P x) = checkPredeccessor x
       | checkPredeccessor _ = false
+
+  fun repeat (VAR str) = VAR str
+      | repeat Z = Z
+      | repeat T = T
+      | repeat F = F
+      | repeat (P (S x)) = repeat x
+      | repeat (S (P x)) = repeat x
+      | repeat (P x) = P(repeat x)
+      | repeat (S x) = S(repeat x)
+      | repeat (ITE (T,y,z)) = repeat y
+      | repeat (ITE (F,y,z)) = repeat z
+      | repeat (ITE (x,y,z)) = if (repeat(y) = repeat(z)) then repeat (y)
+                             else if (repeat(x) = T) then repeat(y)
+                             else if (repeat(x) = F) then repeat(z) 
+                             else ITE(repeat(x),repeat(y),repeat(z))
+      | repeat (IZ Z) = T
+      | repeat (IZ x) = if (checkSuccessor(repeat(x)) orelse checkPredeccessor(repeat(x))) then F
+                      else (IZ (repeat(x)))
+      | repeat (GTZ Z) = F
+      | repeat (GTZ x) = if (checkSuccessor(repeat(x))) then T
+                      else if (checkPredeccessor(repeat(x))) then F
+                      else (GTZ (repeat(x)))
+
 in
-  fun normalize (VAR str) = VAR str
-      | normalize Z = Z
-      | normalize T = T
-      | normalize F = F
-      | normalize (P (S x)) = normalize x
-      | normalize (S (P x)) = normalize x
-      | normalize (P x) = P(normalize x)
-      | normalize (S x) = S(normalize x)
-      | normalize (ITE (T,y,z)) = normalize y
-      | normalize (ITE (F,y,z)) = normalize z
-      | normalize (ITE (x,y,z)) = if (normalize(y) = normalize(z)) then normalize (y)
-                             else if (normalize(x) = T) then normalize(y)
-                             else if (normalize(x) = F) then normalize(z) 
-                             else ITE(normalize(x),normalize(y),normalize(z))
-      | normalize (IZ Z) = T
-      | normalize (IZ x) = if (checkSuccessor(normalize(x)) orelse checkPredeccessor(normalize(x))) then F
-                      else (IZ (normalize(x)))
-      | normalize (GTZ Z) = F
-      | normalize (GTZ x) = if (checkSuccessor(normalize(x))) then T
-                      else if (checkPredeccessor(normalize(x))) then F
-                      else (GTZ (normalize(x)))
+  fun normalize t = 
+  let val reduced = repeat(t)
+  in if(reduced = t) then reduced
+      else normalize reduced
+  end
+
 end
