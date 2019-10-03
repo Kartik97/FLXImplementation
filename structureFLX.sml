@@ -170,5 +170,6 @@ val t1 = "(ITE <(ITE <(GTZ (S Z)),Z,(IZ (S Z))>),(S (S x)),(S (S (P Z)))>)"
 val t2 = "(P (ITE <(S (ITE <T,(P T),(S (S Z))>)),T,(S (P Z))>))"
 val t3 = "(P (ITE <(S (ITE <T,(P T),(S (S Z)),T,(S (P Z))>))>))"
 val t4 = "(P (ITE <(S (ITE <T,(P T)(S (S Z))>)),T,(S (P Z))>))"
+val t5 = ""
 val term1 = ITE (ITE (GTZ (S Z),Z,IZ (S Z)),S (S (VAR "x")),S (S (P Z)))
 val term2 = P (ITE (S (ITE (T,P T,S (S Z))),T,S (P Z)))
