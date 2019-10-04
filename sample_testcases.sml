@@ -1,3 +1,4 @@
+use "signatureFLX.sml";
 use "structureFLX.sml";
 
 open Flx;
@@ -75,3 +76,25 @@ val t9 = P (S Z);
 val resultnorm1 = (case (normalize t9) of
                 Z => (print "Correct\n"; true)
                 | _ => (print "incorrect\n"; false));
+
+(*
+open Flx
+
+val t0 = "(ITE <T,F,F>)"
+val t1 = "(ITE <(ITE <(GTZ (S Z)),Z,(IZ (S Z))>),(S (S x)),(S (S (P Z)))>)"
+val t2 = "(P (ITE <(S (ITE <T,(P T),(S (S Z))>)),T,(S (P Z))>))"
+val t3 = "(P (ITE <(S (ITE <T,(P T),(S (S Z)),T,(S (P Z))>))>))"
+val t4 = "(P (ITE <(S (ITE <T,(P T)>(S (S Z)))),T,(S (P Z))>))"
+val t5 = "(ITE <(P (S (S Z))), a>), ttR)"
+val term1 = ITE (ITE (GTZ (S Z),Z,IZ (S Z)),S (S (VAR "x")),S (S (P Z)))
+val term2 = P (ITE (S (ITE (T,P T,S (S Z))),T,S (P Z)))
+
+
+val n1 = (ITE ((VAR "naman"), (IZ (S (P (S (S (P (P Z))))))), (GTZ (ITE ((IZ (P (S Z))), (S (S Z)), F)))));
+
+val n2 = "(ITE <kaash,koi,mil>)";
+val n3 = (GTZ (S (P Z)));
+val n4 = "(GTZ (IZ (ITE <(S abc),(GTZ (IZ (ITE <T,(P (P (GTZ (IZ (P (P T)))))),F>))),(S (IZ F))>)))";
+
+val n5 = ITE (ITE(GTZ (S (P (S Z))),IZ (S (P Z)),F),S (S (P (S (GTZ Z)))),T)
+*)
