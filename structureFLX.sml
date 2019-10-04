@@ -158,11 +158,11 @@ struct
                                else if (repeat(x) = F) then repeat(z) 
                                else ITE(repeat(x),repeat(y),repeat(z))
         | repeat (IZ Z) = T
-        | repeat (IZ x) = if (checkSuccessor(repeat(x)) orelse checkPredeccessor(repeat(x))) then F
+        | repeat (IZ x) = if (checkSuccessor((x)) orelse checkPredeccessor((x))) then F
                         else (IZ (repeat(x)))
         | repeat (GTZ Z) = F
-        | repeat (GTZ x) = if (checkSuccessor(repeat(x))) then T
-                        else if (checkPredeccessor(repeat(x))) then F
+        | repeat (GTZ x) = if (checkSuccessor((x))) then T
+                        else if (checkPredeccessor((x))) then F
                         else (GTZ (repeat(x)))
 
   in
@@ -177,8 +177,8 @@ struct
 
 end
 
-(*
-open structureFLX
+
+open Flx
 
 val t0 = "(ITE <T,F,F>)"
 val t1 = "(ITE <(ITE <(GTZ (S Z)),Z,(IZ (S Z))>),(S (S x)),(S (S (P Z)))>)"
@@ -189,4 +189,9 @@ val t5 = "(ITE <(P (S (S Z))), a>), ttR)"
 val term1 = ITE (ITE (GTZ (S Z),Z,IZ (S Z)),S (S (VAR "x")),S (S (P Z)))
 val term2 = P (ITE (S (ITE (T,P T,S (S Z))),T,S (P Z)))
 
-*)
+
+val n1 = (ITE ((VAR "naman"), (IZ (S (P (S (S (P (P Z))))))), (GTZ (ITE ((IZ (P (S Z))), (S (S Z)), F)))));
+
+val n2 = "(ITE <kaash,koi,mil>)";
+val n3 = (GTZ (S (P Z)));
+val n4 = "(GTZ (IZ (ITE <(S abc),(GTZ (IZ (ITE <T,(P (P (GTZ (IZ (P (P T)))))),F>))),(S (IZ F))>)))";
