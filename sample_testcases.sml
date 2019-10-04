@@ -72,6 +72,6 @@ val resultstring7 = (case (toString t4) of
 
 (* Test cases for normalize *)
 val t9 = P (S Z);
-val resultnorm1 = (case (normalize t3) of 
+val resultnorm1 = (case (normalize t9) of
                 Z => (print "Correct\n"; true)
                 | _ => (print "incorrect\n"; false));

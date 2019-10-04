@@ -1,4 +1,4 @@
-structure structureFLX : FLX =
+structure Flx : FLX =
 struct
   (* Body *)
   exception Not_wellformed
@@ -15,9 +15,12 @@ struct
                   | GTZ of term (* is greater than zero *)
 
 
-fun fromString "" = raise Not_wellformed
+  fun fromString "" = raise Not_wellformed
     | fromString s = 
       let
+        datatype stack =
+          TERM of term 
+          | STR of string
 
         val lst = explode(s)
 
@@ -45,47 +48,58 @@ fun fromString "" = raise Not_wellformed
 
           val tokenised = addSingleBraces(tokens(lst,[],""),[])
 
-          fun checkLength (n,tokenList) = if(List.length(tokenList) = n) then true else false
+          fun checkPrevious (STR x) = true
+              | checkPrevious (TERM _) = false
 
-          fun checkComma ([],0) = true
-              | checkComma ([],n) = false
-              | checkComma (x::t,n) = if(x = ",") then checkComma(t,n-1) else checkComma(t,n)
+          fun findTerm (TERM x) = x
+              | findTerm _ = raise Not_wellformed
 
-          fun checkAngles ([],0) = true
-              | checkAngles ([],n) = false
-              | checkAngles (x::t,n) = if(x = ",") then checkAngles(t,n-1) else checkAngles(t,n)
+          fun findStr (STR x) = x
+              | findStr _ = raise Not_wellformed
 
-          fun parser (x::t) =
-              if(x = "(") then 
-                let 
-                  val (restList,tokenList,termList) = extract_term (t,[],[])
-                in
-                  case hd(tokenList) of
-                    "Z" => if (checkLength(0,termList)) then (restList,Z) else raise Not_wellformed
-                    | "T" => if (checkLength(0,termList)) then (restList,T) else raise Not_wellformed
-                    | "F" => if (checkLength(0,termList)) then (restList,F) else raise Not_wellformed
-                    | "S" => if (checkLength(1,termList)) then (restList,(S (hd termList))) else raise Not_wellformed
-                    | "P" => if (checkLength(1,termList)) then (restList,(P (hd termList))) else raise Not_wellformed
-                    | "IZ" => if (checkLength(1,termList)) then (restList,(IZ (hd termList))) else raise Not_wellformed
-                    | "GTZ" => if (checkLength(1,termList)) then (restList,(GTZ (hd termList))) else raise Not_wellformed
-                    | "ITE" => if(checkLength(3,termList) andalso checkComma(tokenList,2) andalso checkAngles(tokenList,2)) then (restList,ITE (hd termList,hd(tl termList),hd(tl(tl termList)))) else raise Not_wellformed
-                    | x => if(checkLength(0,termList)) then (restList,VAR x) else raise Not_wellformed
-                end
-              else raise Not_wellformed
-          and extract_term ([],tokenList,termList) = raise Not_wellformed
-            | extract_term (x::t,tokenList,termList) =
-            if (x = "(") then 
-              let 
-                val (nextList,term) = parser(x::t)
-              in
-                extract_term (nextList,tokenList,term::termList)
-              end 
-            else if(x = ")") then (t,List.rev(tokenList),List.rev(termList))
-            else extract_term(t,x::tokenList,termList)
+          fun createITE (a::b::c::d::e::f::g::h::t) = 
+                if(findStr(b) = "," andalso findStr(d) = "," andalso findStr(f) = "<" andalso findStr(g) = "ITE" andalso findStr(h) = "(" ) then
+                  TERM (ITE (findTerm e,findTerm c,findTerm a))::t
+                else raise Not_wellformed
+              | createITE _ = raise Not_wellformed 
 
-          val (token_list,term) = parser tokenised
+          fun parser ([],stk) = if(List.length(stk) <> 1 orelse checkPrevious(hd stk)) then raise Not_wellformed
+                                else findTerm(hd stk) 
+              | parser (x::t,stk) = 
+                  if (x = ">") then 
+                    if((hd t) = ")") then parser(tl t,createITE(stk))
+                    else raise Not_wellformed
+                  else if(x <> ")") then parser(t,STR(x)::stk)
+                  else if(checkPrevious (hd (stk))) then
+                        let val x = findStr(hd stk)
+                            val brac = findStr(hd (tl stk))
+                        in if(brac <> "(") then raise Not_wellformed
+                           else case x of
+                                 "T" => parser(t,(TERM T)::(tl (tl stk)))
+                                 | "F" => parser(t,(TERM F)::(tl (tl stk)))
+                                 | "Z" => parser(t,(TERM Z)::(tl (tl stk)))
+                                 | "S" => raise Not_wellformed
+                                 | "P" => raise Not_wellformed
+                                 | "IZ" => raise Not_wellformed
+                                 | "GTZ" => raise Not_wellformed
+                                 | "ITE" => raise Not_wellformed
+                                 | z => parser(t,(TERM (VAR z))::(tl (tl stk)))
+                        end
+                       else 
+                        let val para = findTerm (hd stk)
+                            val cons = findStr(hd (tl stk))
+                            val brac = findStr (hd (tl (tl stk)))
+                        in if(brac = "(") then
+                            case cons of
+                            "S" => parser(t,(TERM (S para))::(tl (tl (tl stk))))
+                            | "P" => parser(t,(TERM (P para))::(tl (tl (tl stk))))
+                            | "IZ" => parser(t,(TERM (IZ para))::(tl (tl (tl stk))))
+                            | "GTZ" => parser(t,(TERM (GTZ para))::(tl (tl (tl stk))))
+                            | _ => raise Not_wellformed
+                           else raise Not_wellformed
+                        end
       in
-          if(List.length(token_list) = 0) then term else raise Not_wellformed
+        parser(tokenised,[])
       end
 
   fun toString (VAR str) = str
@@ -163,13 +177,16 @@ fun fromString "" = raise Not_wellformed
 
 end
 
+(*
 open structureFLX
 
 val t0 = "(ITE <T,F,F>)"
 val t1 = "(ITE <(ITE <(GTZ (S Z)),Z,(IZ (S Z))>),(S (S x)),(S (S (P Z)))>)"
 val t2 = "(P (ITE <(S (ITE <T,(P T),(S (S Z))>)),T,(S (P Z))>))"
 val t3 = "(P (ITE <(S (ITE <T,(P T),(S (S Z)),T,(S (P Z))>))>))"
-val t4 = "(P (ITE <(S (ITE <T,(P T)(S (S Z))>)),T,(S (P Z))>))"
-val t5 = ""
+val t4 = "(P (ITE <(S (ITE <T,(P T)>(S (S Z)))),T,(S (P Z))>))"
+val t5 = "(ITE <(P (S (S Z))), a>), ttR)"
 val term1 = ITE (ITE (GTZ (S Z),Z,IZ (S Z)),S (S (VAR "x")),S (S (P Z)))
 val term2 = P (ITE (S (ITE (T,P T,S (S Z))),T,S (P Z)))
+
+*)
