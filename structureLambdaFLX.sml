@@ -1,39 +1,46 @@
-structure Flx : FLX =
+(*structure Flx : FLX =
 struct
-  (* Body *)
+   Body *)
   exception Not_wellformed
   exception Not_nf
   exception Not_int
-  datatype term = VAR of string (* variable *)
-                  | Z           (* zero *)
-                  | T           (* true *)
-                  | F           (* false *)
-                  | P of term   (* Predecessor *)
-                  | S of term   (* Successor *)
-                  | ITE of term * term * term   (* If then else *)
-                  | IZ of term  (* is zero *)
-                  | GTZ of term (* is greater than zero *)
+  exception Not_welltyped
+  datatype lterm = VAR of string      (* variables *)
+                   | Z                  (* zero *)
+                   | T                  (* true *)
+                   | F                  (* false *)
+                   | P of lterm         (* Predecessor *)
+                   | S of lterm         (* Successor *)
+                   | ITE of lterm * lterm * lterm       (* If then else *)
+                   | IZ of lterm        (* is zero *)
+                   | GTZ of lterm       (* is greater than zero *)
+                   | LAMBDA of lterm * lterm    (* lambda x [lterm] *)
+                   | APP of lterm * lterm       (* application of lambda terms, i.e. (L M) *)
 
-
-  fun fromString "" = raise Not_wellformed
+(*  fun fromString "" = raise Not_wellformed
     | fromString s = 
-      let
+      let  *)
         datatype stack =
-          TERM of term 
+          TERM of lterm 
           | STR of string
 
-        val lst = explode(s)
+val t1 = ""
+val t2= "((P Z) (S Z))"
+
+        val lst = explode(t2)
 
         fun tokens ([],tokenList,curr) = if (curr <> "") then curr::tokenList
                                          else tokenList
             | tokens (x::t,tokenList,curr) =
-            if (String.str(x) = "(" orelse String.str(x) = "<")  then
-              String.str(x)::tokens(t,tokenList,"")
+            if (String.str(x) = "(" orelse String.str(x) = "<" orelse String.str(x) = "[")  then
+              if(curr <> "") then 
+                curr::String.str(x)::tokens(t,tokenList,"")
+              else String.str(x)::tokens(t,tokenList,"")
             else if(String.str(x) = " ") then 
               if(curr <> "") then
                 curr::tokens(t,tokenList,"")
               else tokens(t,tokenList,"")
-            else if(String.str(x) = ")" orelse String.str(x) = ">" orelse String.str(x) = ",") then
+            else if(String.str(x) = ")" orelse String.str(x) = ">" orelse String.str(x) = "," orelse String.str(x) = "]") then
               if(curr <> "") then 
                 curr::String.str(x)::tokens(t,tokenList,"")
               else String.str(x)::tokens(t,tokenList,"")
@@ -42,11 +49,12 @@ struct
           fun addSingleBraces ([],singleBrace) = singleBrace
               | addSingleBraces (h::t,singleBrace) = 
                   if(h <> "(" andalso h <> ")" andalso h <> "<" andalso h <> ">" andalso h <> "S" andalso h <> "P"
-                  andalso h <> "ITE" andalso h <> "IZ" andalso h <> "GTZ" andalso h <> ",") then
+                  andalso h <> "ITE" andalso h <> "IZ" andalso h <> "GTZ" andalso h <> "," andalso h <> "[" 
+                  andalso h <> "]" andalso h <> "LAMBDA" andalso h <> "APP") then
                       "("::h::")"::addSingleBraces(t,singleBrace)
                   else h::addSingleBraces(t,singleBrace)
 
-          val tokenised = addSingleBraces(tokens(lst,[],""),[])
+          val tokenised = addSingleBraces(tokens(lst,[],""),[])  
 
           fun checkPrevious (STR x) = true
               | checkPrevious (TERM _) = false
@@ -61,7 +69,13 @@ struct
                 if(findStr(b) = "," andalso findStr(d) = "," andalso findStr(f) = "<" andalso findStr(g) = "ITE" andalso findStr(h) = "(" ) then
                   TERM (ITE (findTerm e,findTerm c,findTerm a))::t
                 else raise Not_wellformed
-              | createITE _ = raise Not_wellformed 
+              | createITE _ = raise Not_wellformed
+
+          fun createLAMBDA (a::b::c::d::t) =
+                if(checkPrevious(a) <> true andalso findStr(b) = "[" andalso checkPrevious(c) <> true andalso findStr(d) = "LAMBDA") then
+                  TERM (LAMBDA (findTerm c,findTerm a))::t
+                else raise Not_wellformed
+              | createLAMBDA _ = raise Not_wellformed
 
           fun parser ([],stk) = if(List.length(stk) <> 1 orelse checkPrevious(hd stk)) then raise Not_wellformed
                                 else findTerm(hd stk) 
@@ -69,6 +83,8 @@ struct
                   if (x = ">") then 
                     if((hd t) = ")") then parser(tl t,createITE(stk))
                     else raise Not_wellformed
+                  else if(x = "]") then
+                    parser(t,createLAMBDA(stk))
                   else if(x <> ")") then parser(t,STR(x)::stk)
                   else if(checkPrevious (hd (stk))) then
                         let val x = findStr(hd stk)
@@ -83,9 +99,11 @@ struct
                                  | "IZ" => raise Not_wellformed
                                  | "GTZ" => raise Not_wellformed
                                  | "ITE" => raise Not_wellformed
+                                 | "LAMBDA" => raise Not_wellformed
+                                 | "APP" => raise Not_wellformed
                                  | z => parser(t,(TERM (VAR z))::(tl (tl stk)))
                         end
-                       else 
+                  else if(checkPrevious(hd (tl stk))) then
                         let val para = findTerm (hd stk)
                             val cons = findStr(hd (tl stk))
                             val brac = findStr (hd (tl (tl stk)))
@@ -98,10 +116,14 @@ struct
                             | _ => raise Not_wellformed
                            else raise Not_wellformed
                         end
-      in
+                  else 
+                        if(checkPrevious(hd stk) <> true andalso checkPrevious(hd (tl stk)) <> true andalso findStr (hd (tl (tl stk))) = "(") then
+                          parser(t,TERM(APP(findTerm(hd (tl stk)),findTerm(hd stk)))::(tl (tl (tl stk))))                   
+                        else raise Not_wellformed
+ (*     in
         parser(tokenised,[])
-      end
-
+      end    *)
+(*
   fun toString (VAR str) = str
       | toString Z = "Z"
       | toString T = "T"
@@ -179,6 +201,7 @@ struct
         else normalize reduced
     end
 
-  end
-
+  end *)
+(*
 end
+*)

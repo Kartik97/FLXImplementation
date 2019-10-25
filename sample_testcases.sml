@@ -1,5 +1,5 @@
 use "signatureFLX.sml";
-use "structureFLX.sml";
+use "structureFLX2.sml";
 
 open Flx;
 
