@@ -17,17 +17,17 @@ struct
                    | LAMBDA of lterm * lterm    (* lambda x [lterm] *)
                    | APP of lterm * lterm       (* application of lambda terms, i.e. (L M) *)
 
-(*  fun fromString "" = raise Not_wellformed
+  val l1 = "LAMBDA x[(P x)]";
+  val l2 = "(LAMBDA x[(S (P x))] (P z))"
+
+  fun fromString "" = raise Not_wellformed
     | fromString s = 
-      let  *)
+      let
         datatype stack =
           TERM of lterm 
           | STR of string
 
-val t1 = ""
-val t2= "((P Z) (S Z))"
-
-        val lst = explode(t2)
+        val lst = explode(s)
 
         fun tokens ([],tokenList,curr) = if (curr <> "") then curr::tokenList
                                          else tokenList
@@ -120,10 +120,10 @@ val t2= "((P Z) (S Z))"
                         if(checkPrevious(hd stk) <> true andalso checkPrevious(hd (tl stk)) <> true andalso findStr (hd (tl (tl stk))) = "(") then
                           parser(t,TERM(APP(findTerm(hd (tl stk)),findTerm(hd stk)))::(tl (tl (tl stk))))                   
                         else raise Not_wellformed
- (*     in
+      in
         parser(tokenised,[])
-      end    *)
-(*
+      end
+
   fun toString (VAR str) = str
       | toString Z = "Z"
       | toString T = "T"
@@ -133,6 +133,8 @@ val t2= "((P Z) (S Z))"
       | toString (IZ (x)) = "(IZ "^toString(x)^")"
       | toString (GTZ (x)) = "(GTZ "^toString(x)^")"
       | toString (ITE (x1,x2,x3)) = "(ITE <"^toString(x1)^","^toString(x2)^","^toString(x3)^">)"
+      | toString (LAMBDA (x1,x2)) = "LAMBDA "^toString(x1)^"["^toString(x2)^"]"
+      | toString (APP (x1,x2)) = "("^toString(x1)^" "^toString(x2)^")"
 
   fun fromInt (x:int) =
       if (x = 0) then Z
@@ -161,7 +163,7 @@ val t2= "((P Z) (S Z))"
       if(check_int(t)) then calculate(t)
       else raise Not_int
     end
-
+(*
   local
     fun checkSuccessor Z = true
         | checkSuccessor (S x) = checkSuccessor x
