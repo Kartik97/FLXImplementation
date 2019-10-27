@@ -203,7 +203,9 @@ struct
   t1 = P (ITE (LAMBDA (VAR "x",IZ (S (T))),Z,Z)
   t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))
   t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z))
-
+  t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z))
+  t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T)
+  t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T)
 *)
 
 
@@ -232,34 +234,37 @@ struct
       | test (P x,l) =let
                         val (n,L) = test (x,l)
                       in
-                        if(n = 1) then (1,l) else (~2,l)
+                        if(n = 1) then (1,L) else (~2,L)
                       end
       | test (S (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
       | test (S x,l) =let
                         val (n,L) = test (x,l)
                       in
-                        if(n = 1) then (1,l) else (~2,l)
+                        if(n = 1) then (1,L) else (~2,L)
                       end
       | test (IZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
       | test (IZ x,l) =let
                         val (n,L) = test (x,l)
                       in
-                        if(n = 1) then (0,l) else (~2,l)
+                        if(n = 1) then (0,L) else (~2,L)
                       end
                       
       | test (GTZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
       | test (GTZ x,l) =let
                         val (n,L) = test (x,l)
                       in
-                        if(n = 1) then (0,l) else (~2,l)
+                        if(n = 1) then (0,L) else (~2,L)
                       end
       | test (ITE (x1,x2,x3),l) = let
                                     val p1 = if(checkVar(x1) <> "") then insert(l,checkVar x1,0) else l
                                     val p2 = if(checkVar(x2) <> "") then insert(p1,checkVar x2,2) else p1
                                     val p3 = if(checkVar(x3) <> "") then insert(p2,checkVar x3,2) else p2
-                                    val (n1,L1) = test(x1,p1)
+  (*                                  val (n1,L1) = test(x1,p1)
                                     val (n2,L2) = test(x2,p2@L1)
-                                    val (n3,L3) = test(x3,p3@L2)
+                                    val (n3,L3) = test(x3,p3@L2)  *)
+                                    val (n1,L1) = test(x1,l)
+                                    val (n2,L2) = test(x2,L1)
+                                    val (n3,L3) = test(x3,L2)
                                   in
                                     if((n1 = 0 orelse n1 = 2) andalso n2 = n3) then (n3,L3)
                                     else (~2,p3)
