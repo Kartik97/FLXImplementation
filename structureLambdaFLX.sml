@@ -5,7 +5,18 @@ struct
   exception Not_nf
   exception Not_int
   exception Not_welltyped
-  datatype lterm = VAR of string      (* variables *)
+  datatype term = VAR of string (* variable *)
+                  | Z           (* zero *)
+                  | T           (* true *)
+                  | F           (* false *)
+                  | P of term   (* Predecessor *)
+                  | S of term   (* Successor *)
+                  | ITE of term * term * term   (* If then else *)
+                  | IZ of term  (* is zero *)
+                  | GTZ of term (* is greater than zero *)
+
+  datatype lterm = term
+                   | VAR of string      (* variables *)
                    | Z                  (* zero *)
                    | T                  (* true *)
                    | F                  (* false *)
@@ -163,7 +174,122 @@ struct
       if(check_int(t)) then calculate(t)
       else raise Not_int
     end
+
+(*    fun checkInt Z = true
+        | checkInt (VAR x) = true
+        | checkInt T = false
+        | checkInt F = false
+        | checkInt (P x) = checkInt x
+        | checkInt (S x) = checkInt x
+        | checkInt (IZ x) = false
+        | checkInt (GTZ x) = false
+        | checkInt (ITE (x1,x2,x3)) = checkBool(x1) andalso checkInt(x2) andalso checkInt(x3)
+        | checkInt (LAMBDA (VAR x1,x2)) = checkInt(x2)
+        | checkInt _ = false
+    and checkBool Z = false
+        | checkBool (VAR x) = true
+        | checkBool T = true
+        | checkBool F = true
+        | checkBool (P x) = false
+        | checkBool (S x) = false
+        | checkBool (IZ x) = checkInt x
+        | checkBool (GTZ x) = checkInt x
+        | checkBool (ITE (x1,x2,x3)) = checkBool(x1) andalso checkBool(x2) andalso checkBool(x3)
+        | checkBool (LAMBDA (VAR x1,x2)) = checkBool(x2)
+        | checkBool _ = false   *)
+
 (*
+
+  t1 = P (ITE (LAMBDA (VAR "x",IZ (S (T))),Z,Z)
+  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))
+  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z))
+
+*)
+
+
+  datatype dict = 
+    PAIR of string * int 
+
+  fun find ([],x) = ~1
+    | find (PAIR(s,value)::t,x) = 
+      if(s=x) then value else find(t,x)
+
+  fun update (PAIR(s,value)::t,x,v,l) = if(s=x) then 
+                                    if(value=2 orelse value = v) then PAIR(s,v)::t@l else PAIR(s,value)::t@l
+                               else update(t,x,v,PAIR(s,value)::l)
+
+  fun insert (l,x,v) = if(find (l,x) = ~1) then PAIR(x,v)::l else update(l,x,v,[])
+
+  fun checkVar(VAR x) = x
+      | checkVar _ = ""
+  (*  int = 1    bool = 0   generic = 2   Not Well typed = ~2*)
+
+  fun test (Z,l) = (1,l)
+      | test (VAR x,l) = (find(insert(l,x,2),x),insert(l,x,2))
+      | test (T,l) = (0,l)
+      | test (F,l) = (0,l)
+      | test (P (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
+      | test (P x,l) =let
+                        val (n,L) = test (x,l)
+                      in
+                        if(n = 1) then (1,l) else (~2,l)
+                      end
+      | test (S (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
+      | test (S x,l) =let
+                        val (n,L) = test (x,l)
+                      in
+                        if(n = 1) then (1,l) else (~2,l)
+                      end
+      | test (IZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
+      | test (IZ x,l) =let
+                        val (n,L) = test (x,l)
+                      in
+                        if(n = 1) then (0,l) else (~2,l)
+                      end
+                      
+      | test (GTZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
+      | test (GTZ x,l) =let
+                        val (n,L) = test (x,l)
+                      in
+                        if(n = 1) then (0,l) else (~2,l)
+                      end
+      | test (ITE (x1,x2,x3),l) = let
+                                    val p1 = if(checkVar(x1) <> "") then insert(l,checkVar x1,0) else l
+                                    val p2 = if(checkVar(x2) <> "") then insert(p1,checkVar x2,2) else p1
+                                    val p3 = if(checkVar(x3) <> "") then insert(p2,checkVar x3,2) else p2
+                                    val (n1,L1) = test(x1,p1)
+                                    val (n2,L2) = test(x2,p2@L1)
+                                    val (n3,L3) = test(x3,p3@L2)
+                                  in
+                                    if((n1 = 0 orelse n1 = 2) andalso n2 = n3) then (n3,L3)
+                                    else (~2,p3)
+                                  end
+      | test (LAMBDA (VAR x,t),l) = test(t,l)
+      | test (LAMBDA (_,_),l) = (~2,l)
+      | test (APP (LAMBDA (VAR x,t1),t2),l) = let
+                                              val (lmb,lmbList) = test(t1,insert(l,x,2))
+                                              val (app,appList) = test(t2,lmbList)
+                                            in
+                                              if(find(lmbList,x) = app orelse find(lmbList,x) = 2) then (lmb,appList)
+                                              else (~2,appList)
+                                            end
+      | test(APP (LAMBDA (_,_),_),l) = (~2,l)
+      | test(APP (t1,t2),l)=let
+                              val (n1,L1) = test(t1,l)
+                              val (n2,L2) = test(t2,L1)
+                            in
+                              if(n1 <> ~2 andalso n2 <> ~2) then (n1,L2) else (~2,L2)
+                            end
+
+(*
+  if(checkVar(x1) <> "") then 
+                                    if(checkVar(x2) <> "") then 
+                                      if(checkVar(x3) <> "") then insert(insert(insert(l,x3,2),x2,2),x1,0)
+                                      else test(insert(insert(l,x2,2),x1,0))
+                                    else 
+                                  else 
+
+
   local
     fun checkSuccessor Z = true
         | checkSuccessor (S x) = checkSuccessor x
