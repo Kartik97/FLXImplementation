@@ -28,9 +28,6 @@ struct
                    | LAMBDA of lterm * lterm    (* lambda x [lterm] *)
                    | APP of lterm * lterm       (* application of lambda terms, i.e. (L M) *)
 
-  val l1 = "LAMBDA x[(P x)]";
-  val l2 = "(LAMBDA x[(S (P x))] (P z))"
-
   fun fromString "" = raise Not_wellformed
     | fromString s = 
       let
@@ -175,6 +172,93 @@ struct
       else raise Not_int
     end
 
+  fun isWellTyped t = 
+    let
+      datatype dict = 
+        PAIR of string * int 
+
+      fun find ([],x) = ~1
+        | find (PAIR(s,value)::t,x) = 
+          if(s=x) then value else find(t,x)
+
+      fun update (PAIR(s,value)::t,x,v,l) = if(s=x) then 
+                                        if(value=2 orelse value = v) then PAIR(s,v)::t@l else PAIR(s,value)::t@l
+                                   else update(t,x,v,PAIR(s,value)::l)
+
+      fun insert (l,x,v) = if(find (l,x) = ~1) then PAIR(x,v)::l else update(l,x,v,[])
+
+      fun checkVar(VAR x) = x
+          | checkVar _ = ""
+      (*  int = 1    bool = 0   generic = 2   Not Well typed = ~2*)
+
+      fun checkType (Z,l) = (1,l)
+          | checkType (VAR x,l) = (find(insert(l,x,2),x),insert(l,x,2))
+          | checkType (T,l) = (0,l)
+          | checkType (F,l) = (0,l)
+          | checkType (P (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
+          | checkType (P x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (1,L) else (~2,L)
+                          end
+          | checkType (S (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
+          | checkType (S x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (1,L) else (~2,L)
+                          end
+          | checkType (IZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
+          | checkType (IZ x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (0,L) else (~2,L)
+                          end
+                          
+          | checkType (GTZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
+          | checkType (GTZ x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (0,L) else (~2,L)
+                          end
+          | checkType (ITE (x1,x2,x3),l) = let
+                                        val p1 = if(checkVar(x1) <> "") then insert(l,checkVar x1,0) else l
+                                        val p2 = if(checkVar(x2) <> "") then insert(p1,checkVar x2,2) else p1
+                                        val p3 = if(checkVar(x3) <> "") then insert(p2,checkVar x3,2) else p2
+      (*                                  val (n1,L1) = checkType(x1,p1)
+                                        val (n2,L2) = checkType(x2,p2@L1)
+                                        val (n3,L3) = checkType(x3,p3@L2)  *)
+                                        val (n1,L1) = checkType(x1,p3)
+                                        val (n2,L2) = checkType(x2,L1)
+                                        val (n3,L3) = checkType(x3,L2)
+                                      in
+                                        if((n1 = 0 orelse n1 = 2) andalso n2 = n3) then (n3,L3)
+                                        else if((n1 = 0 orelse n1 = 2) andalso n2<> ~2 andalso n3 <> ~2) then
+                                            if(n2 = 2) then (n3,L3)
+                                            else (n2,L3)
+                                        else
+                                          (~2,p3)
+                                      end
+          | checkType (LAMBDA (VAR x,t),l) = checkType(t,l)
+          | checkType (LAMBDA (_,_),l) = (~2,l)
+          | checkType (APP (LAMBDA (VAR x,t1),t2),l) = let
+                                                  val (lmb,lmbList) = checkType(t1,insert(l,x,2))
+                                                  val (app,appList) = checkType(t2,lmbList)
+                                                in
+                                                  if((find(lmbList,x) = app orelse find(lmbList,x) = 2) andalso lmb <> ~2 andalso app <> ~2) then (lmb,appList)
+                                                  else (~2,appList)
+                                                end
+          | checkType(APP (LAMBDA (_,_),_),l) = (~2,l)
+          | checkType(APP (t1,t2),l)=let
+                                  val (n1,L1) = checkType(t1,l)
+                                  val (n2,L2) = checkType(t2,L1)
+                                in
+                                  if(n1 <> ~2 andalso n2 <> ~2) then (n1,L2) else (~2,L2)
+                                end
+      val (n,l) = checkType(t,[])
+  in
+      if(n = ~2) then false else true
+  end
+
 (*    fun checkInt Z = true
         | checkInt (VAR x) = true
         | checkInt T = false
@@ -199,6 +283,9 @@ struct
         | checkBool _ = false   *)
 
 (*
+  
+  val l1 = "LAMBDA x[(P x)]";
+  val l2 = "(LAMBDA x[(S (P x))] (P z))"
 
   t1 = P (ITE (LAMBDA (VAR "x",IZ (S (T))),Z,Z)
   t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))
@@ -206,94 +293,13 @@ struct
   t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z))
   t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T)
   t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T)
+  t6 = LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T))
+  t7 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),IZ Z);
+  t8 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),P (S Z))
+  t9 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),ITE(T,P (S Z),T))
+  t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T))
+
 *)
-
-
-  datatype dict = 
-    PAIR of string * int 
-
-  fun find ([],x) = ~1
-    | find (PAIR(s,value)::t,x) = 
-      if(s=x) then value else find(t,x)
-
-  fun update (PAIR(s,value)::t,x,v,l) = if(s=x) then 
-                                    if(value=2 orelse value = v) then PAIR(s,v)::t@l else PAIR(s,value)::t@l
-                               else update(t,x,v,PAIR(s,value)::l)
-
-  fun insert (l,x,v) = if(find (l,x) = ~1) then PAIR(x,v)::l else update(l,x,v,[])
-
-  fun checkVar(VAR x) = x
-      | checkVar _ = ""
-  (*  int = 1    bool = 0   generic = 2   Not Well typed = ~2*)
-
-  fun test (Z,l) = (1,l)
-      | test (VAR x,l) = (find(insert(l,x,2),x),insert(l,x,2))
-      | test (T,l) = (0,l)
-      | test (F,l) = (0,l)
-      | test (P (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
-      | test (P x,l) =let
-                        val (n,L) = test (x,l)
-                      in
-                        if(n = 1) then (1,L) else (~2,L)
-                      end
-      | test (S (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
-      | test (S x,l) =let
-                        val (n,L) = test (x,l)
-                      in
-                        if(n = 1) then (1,L) else (~2,L)
-                      end
-      | test (IZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
-      | test (IZ x,l) =let
-                        val (n,L) = test (x,l)
-                      in
-                        if(n = 1) then (0,L) else (~2,L)
-                      end
-                      
-      | test (GTZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
-      | test (GTZ x,l) =let
-                        val (n,L) = test (x,l)
-                      in
-                        if(n = 1) then (0,L) else (~2,L)
-                      end
-      | test (ITE (x1,x2,x3),l) = let
-                                    val p1 = if(checkVar(x1) <> "") then insert(l,checkVar x1,0) else l
-                                    val p2 = if(checkVar(x2) <> "") then insert(p1,checkVar x2,2) else p1
-                                    val p3 = if(checkVar(x3) <> "") then insert(p2,checkVar x3,2) else p2
-  (*                                  val (n1,L1) = test(x1,p1)
-                                    val (n2,L2) = test(x2,p2@L1)
-                                    val (n3,L3) = test(x3,p3@L2)  *)
-                                    val (n1,L1) = test(x1,l)
-                                    val (n2,L2) = test(x2,L1)
-                                    val (n3,L3) = test(x3,L2)
-                                  in
-                                    if((n1 = 0 orelse n1 = 2) andalso n2 = n3) then (n3,L3)
-                                    else (~2,p3)
-                                  end
-      | test (LAMBDA (VAR x,t),l) = test(t,l)
-      | test (LAMBDA (_,_),l) = (~2,l)
-      | test (APP (LAMBDA (VAR x,t1),t2),l) = let
-                                              val (lmb,lmbList) = test(t1,insert(l,x,2))
-                                              val (app,appList) = test(t2,lmbList)
-                                            in
-                                              if(find(lmbList,x) = app orelse find(lmbList,x) = 2) then (lmb,appList)
-                                              else (~2,appList)
-                                            end
-      | test(APP (LAMBDA (_,_),_),l) = (~2,l)
-      | test(APP (t1,t2),l)=let
-                              val (n1,L1) = test(t1,l)
-                              val (n2,L2) = test(t2,L1)
-                            in
-                              if(n1 <> ~2 andalso n2 <> ~2) then (n1,L2) else (~2,L2)
-                            end
-
-(*
-  if(checkVar(x1) <> "") then 
-                                    if(checkVar(x2) <> "") then 
-                                      if(checkVar(x3) <> "") then insert(insert(insert(l,x3,2),x2,2),x1,0)
-                                      else test(insert(insert(l,x2,2),x1,0))
-                                    else 
-                                  else 
-
 
   local
     fun checkSuccessor Z = true
@@ -303,6 +309,18 @@ struct
     fun checkPredeccessor Z = true
         | checkPredeccessor (P x) = checkPredeccessor x
         | checkPredeccessor _ = false
+
+    fun substitute (VAR z,x,t2) = t2
+        | substitute (Z,x,t2) = Z
+        | substitute (T,x,t2) = T
+        | substitute (F,x,t2) = F
+        | substitute (P z,x,t2) = P (substitute (z,x,t2))
+        | substitute (S z,x,t2) = S (substitute (z,x,t2))
+        | substitute (IZ z,x,t2) = IZ (substitute (z,x,t2))
+        | substitute (GTZ z,x,t2) = GTZ (substitute (z,x,t2))
+        | substitute (ITE (z1,z2,z3),x,t2) = ITE (substitute(z1,x,t2),substitute(z2,x,t2),substitute(z3,x,t2))
+        | substitute (LAMBDA (VAR z,t1),x,t2) = LAMBDA(VAR z,substitute(t1,x,t2))
+        | substitute (APP (z1,z2),x,t2) = APP(substitute(z1,x,t2),substitute(z2,x,t2))
 
     fun repeat (VAR str) = VAR str
         | repeat Z = Z
@@ -325,16 +343,26 @@ struct
         | repeat (GTZ x) = if (checkSuccessor((x))) then T
                         else if (checkPredeccessor((x))) then F
                         else (GTZ (repeat(x)))
+        | repeat (LAMBDA (VAR x,t)) = LAMBDA(VAR x,repeat t)
+        | repeat (APP(LAMBDA(VAR x,t1),t2)) = repeat(substitute(t1,x,t2))
+        | repeat (APP(t1,t2)) = APP(repeat t1,repeat t2)
 
   in
 
     fun normalize t = 
-    let val reduced = repeat(t)
+      let 
+        val reduced = if(isWellTyped t) then repeat(t) else raise Not_welltyped
     in if(reduced = t) then reduced
         else normalize reduced
     end
 
-  end *)
+  end
+
+  local 
+
+  fun alphaConversion (VAR "x",count) = VAR Int.toString(count)
 (*
 end
 *)
+
+    
