@@ -317,30 +317,6 @@ struct
 
   end
 
-
-(*    fun checkInt Z = true
-        | checkInt (VAR x) = true
-        | checkInt T = false
-        | checkInt F = false
-        | checkInt (P x) = checkInt x
-        | checkInt (S x) = checkInt x
-        | checkInt (IZ x) = false
-        | checkInt (GTZ x) = false
-        | checkInt (ITE (x1,x2,x3)) = checkBool(x1) andalso checkInt(x2) andalso checkInt(x3)
-        | checkInt (LAMBDA (VAR x1,x2)) = checkInt(x2)
-        | checkInt _ = false
-    and checkBool Z = false
-        | checkBool (VAR x) = true
-        | checkBool T = true
-        | checkBool F = true
-        | checkBool (P x) = false
-        | checkBool (S x) = false
-        | checkBool (IZ x) = checkInt x
-        | checkBool (GTZ x) = checkInt x
-        | checkBool (ITE (x1,x2,x3)) = checkBool(x1) andalso checkBool(x2) andalso checkBool(x3)
-        | checkBool (LAMBDA (VAR x1,x2)) = checkBool(x2)
-        | checkBool _ = false   *)
-
 (*
   
   val l1 = "LAMBDA x[(P x)]";
@@ -385,10 +361,10 @@ struct
   fun findStr([],x) = "~1"
       | findStr (MAP(s,value)::t,x) = if(Int.toString(value) = x) then s else findStr(t,x)
 
-  fun insert (l,x,v) = if(findId (l,x) = ~1) then MAP(x,v)::l else l
+  fun insertMap (l,x,v) = if(findId (l,x) = ~1) then MAP(x,v)::l else l
 
   fun alphaConversion (VAR x,count,temp,new) = if(findId(temp,x) = ~1) then
-                                                (VAR (Int.toString(count+1)),count+1,insert(temp,x,count+1),insert(new,x,count+1))
+                                                (VAR (Int.toString(count+1)),count+1,insertMap(temp,x,count+1),insertMap(new,x,count+1))
                                                else (VAR (Int.toString(findId(temp,x))),count,temp,[])
       | alphaConversion (Z,count,temp,new) = (Z,count,temp,new)
       | alphaConversion (T,count,temp,new) = (T,count,temp,new)
@@ -423,7 +399,7 @@ struct
       | alphaConversion (LAMBDA (VAR x,term1),count,temp,new) = if(findId(temp,x) <> ~1) then raise Not_wellformed
                                                                 else 
                                                                   let 
-                                                                    val temp2 = insert(temp,x,count+1)
+                                                                    val temp2 = insertMap(temp,x,count+1)
                                                                     val (t,c,t1,n1) = alphaConversion(term1,count+1,temp2,[])
                                                                   in
                                                                     (LAMBDA (VAR (Int.toString(count+1)),t),c,temp2@n1,MAP(x,count+1)::new@n1)
