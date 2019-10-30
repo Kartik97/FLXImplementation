@@ -172,10 +172,67 @@ struct
       else raise Not_int
     end
 
-  fun isWellTyped t = 
+fun isWellTyped t = 
     let
       datatype dict = 
         PAIR of string * int 
+
+      datatype temp = 
+        MAP of string * int
+
+      fun findId ([],x) = ~1
+        | findId (MAP(s,value)::t,x) = 
+          if(s=x) then value else findId(t,x)
+
+      fun insertMap (l,x,v) = if(findId (l,x) = ~1) then MAP(x,v)::l else l
+
+      fun alphaConversion (VAR x,count,temp,new) = if(findId(temp,x) = ~1) then
+                                                (VAR (Int.toString(count+1)),count+1,insertMap(temp,x,count+1),insertMap(new,x,count+1))
+                                               else (VAR (Int.toString(findId(temp,x))),count,temp,[])
+      | alphaConversion (Z,count,temp,new) = (Z,count,temp,new)
+      | alphaConversion (T,count,temp,new) = (T,count,temp,new)
+      | alphaConversion (F,count,temp,new) = (F,count,temp,new)
+      | alphaConversion (S x,count,temp,new) = let
+                                                val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
+                                              in
+                                                (S t,c,t1,new@n1)
+                                              end
+      | alphaConversion (P x,count,temp,new) = let
+                                                val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
+                                              in
+                                                (P t,c,t1,new@n1)
+                                              end
+      | alphaConversion (IZ x,count,temp,new) = let
+                                                  val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
+                                                in
+                                                  (IZ t,c,t1,new@n1)
+                                                end
+      | alphaConversion (GTZ x,count,temp,new) = let
+                                                    val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
+                                                  in
+                                                    (GTZ t,c,t1,new@n1)
+                                                  end
+      | alphaConversion (ITE (x1,x2,x3),count,temp,new) = let
+                                                            val (t1,c1,temp1,new1) = alphaConversion(x1,count,temp,[])
+                                                            val (t2,c2,temp2,new2) = alphaConversion(x2,c1,temp,[])
+                                                            val (t3,c3,temp3,new3) = alphaConversion(x3,c2,temp,[])
+                                                          in
+                                                            (ITE (t1,t2,t3),c3,temp@new1@new2@new3,new@new1@new2@new3)
+                                                          end
+      | alphaConversion (LAMBDA (VAR x,term1),count,temp,new) = if(findId(temp,x) <> ~1) then raise Not_wellformed
+                                                                else 
+                                                                  let 
+                                                                    val temp2 = insertMap(temp,x,count+1)
+                                                                    val (t,c,t1,n1) = alphaConversion(term1,count+1,temp2,[])
+                                                                  in
+                                                                    (LAMBDA (VAR (Int.toString(count+1)),t),c,temp2@n1,MAP(x,count+1)::new@n1)
+                                                                  end
+      | alphaConversion (APP (x1,x2),count,temp,new) =  let
+                                                            val (t1,c1,temp1,new1) = alphaConversion(x1,count,temp,[])
+                                                            val (t2,c2,temp2,new2) = alphaConversion(x2,c1,temp,[])
+                                                          in
+                                                            (APP (t1,t2),c2,temp@new1@new2,new@new1@new2)
+                                                          end
 
       fun find ([],x) = ~1
         | find (PAIR(s,value)::t,x) = 
@@ -234,7 +291,8 @@ struct
                                         if((n1 = 0 orelse n1 = 2) andalso n2 = n3) then (n3,L3)
                                         else if((n1 = 0 orelse n1 = 2) andalso n2<> ~2 andalso n3 <> ~2) then
                                             if(n2 = 2) then (n3,L3)
-                                            else (n2,L3)
+                                            else if(n1 = 2) then (n2,L3)
+                                            else (~2,p3)
                                         else
                                           (~2,p3)
                                       end
@@ -254,102 +312,11 @@ struct
                                 in
                                   if(n1 <> ~2 andalso n2 <> ~2) then (n1,L2) else (~2,L2)
                                 end
-      val (n,l) = checkType(t,[])
+      val (conv,c,map,nmap) = alphaConversion(t,0,[],[])
+      val (n,l) = checkType(conv,[])
   in
       if(n = ~2) then false else true
   end
-
-
-  local
-    fun checkSuccessor Z = true
-        | checkSuccessor (S x) = checkSuccessor x
-        | checkSuccessor _ = false
-
-    fun checkPredeccessor Z = true
-        | checkPredeccessor (P x) = checkPredeccessor x
-        | checkPredeccessor _ = false
-
-    fun substitute (VAR z,x,t2) = if(z=x) then t2 else (VAR z)
-        | substitute (Z,x,t2) = Z
-        | substitute (T,x,t2) = T
-        | substitute (F,x,t2) = F
-        | substitute (P z,x,t2) = P (substitute (z,x,t2))
-        | substitute (S z,x,t2) = S (substitute (z,x,t2))
-        | substitute (IZ z,x,t2) = IZ (substitute (z,x,t2))
-        | substitute (GTZ z,x,t2) = GTZ (substitute (z,x,t2))
-        | substitute (ITE (z1,z2,z3),x,t2) = ITE (substitute(z1,x,t2),substitute(z2,x,t2),substitute(z3,x,t2))
-        | substitute (LAMBDA (VAR z,t1),x,t2) = LAMBDA(VAR z,substitute(t1,x,t2))
-        | substitute (APP (z1,z2),x,t2) = APP(substitute(z1,x,t2),substitute(z2,x,t2))
-
-    fun repeat (VAR str) = VAR str
-        | repeat Z = Z
-        | repeat T = T
-        | repeat F = F
-        | repeat (P (S x)) = repeat x
-        | repeat (S (P x)) = repeat x
-        | repeat (P x) = P(repeat x)
-        | repeat (S x) = S(repeat x)
-        | repeat (ITE (T,y,z)) = repeat y
-        | repeat (ITE (F,y,z)) = repeat z
-        | repeat (ITE (x,y,z)) = if (repeat(y) = repeat(z)) then repeat (y)
-                               else if (repeat(x) = T) then repeat(y)
-                               else if (repeat(x) = F) then repeat(z) 
-                               else ITE(repeat(x),repeat(y),repeat(z))
-        | repeat (IZ Z) = T
-        | repeat (IZ x) = if (checkSuccessor((x)) orelse checkPredeccessor((x))) then F
-                        else (IZ (repeat(x)))
-        | repeat (GTZ Z) = F
-        | repeat (GTZ x) = if (checkSuccessor((x))) then T
-                        else if (checkPredeccessor((x))) then F
-                        else (GTZ (repeat(x)))
-        | repeat (LAMBDA (VAR x,t)) = LAMBDA(VAR x,repeat t)
-        | repeat (APP(LAMBDA(VAR x,t1),t2)) = repeat(substitute(t1,x,t2))
-        | repeat (APP(t1,t2)) = APP(repeat t1,repeat t2)
-
-  in
-
-    fun betanf t = 
-      let 
-        val reduced = if(isWellTyped t) then repeat(t) else raise Not_welltyped
-    in if(reduced = t) then reduced
-        else betanf reduced
-    end
-
-  end
-
-(*
-  
-  val l1 = "LAMBDA x[(P x)]";
-  val l2 = "(LAMBDA x[(S (P x))] (P z))"
-  val l3 = "(ITE <LAMBDA x[(S y)],(LAMBDA y[(GTZ y)] Z),(S (P Z))>)"
-  val l4 = "(ITE <LAMBDA x[(S y)],(LAMBDA y[(S y)] Z),(S (P Z))>)"
-  val l5 = "(ITE <LAMBDA x[(IZ y)],(LAMBDA y[(S y)] Z),(S (P Z))>)"
-
-  t1 = P (ITE (LAMBDA (VAR "x",IZ (S (T))),Z,Z)
-  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))
-  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z))
-  t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z))
-  t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T)
-  t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T)
-  t6 = LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T))
-  t7 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),IZ Z);
-  t8 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),P (S Z))
-  t9 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),ITE(T,P (S Z),T))
-  t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T))
-
-
-  APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(F,VAR "y",VAR "x"))),VAR "y"),VAR "z")
-
-
-  ALPHA CONVERSION
-
-  alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",ITE(VAR "x",VAR "y",VAR "y"),VAR "z")),0,[],[]);
-  alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",ITE(VAR "x",VAR "y",VAR "z"),VAR "z")),0,[],[]);
-  alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",VAR "y",VAR "z")),0,[],[]);
-  alphaConversion (LAMBDA(VAR "x",ITE(VAR "x",LAMBDA(VAR "y",ITE(VAR "x",VAR "y",S (VAR "z"))),VAR "y")),0,[],[])
-  
-  
-*)
 
   datatype temp = 
     MAP of string * int
