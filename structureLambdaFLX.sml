@@ -269,7 +269,7 @@ struct
         | checkPredeccessor (P x) = checkPredeccessor x
         | checkPredeccessor _ = false
 
-    fun substitute (VAR z,x,t2) = t2
+    fun substitute (VAR z,x,t2) = if(z=x) then t2 else (VAR z)
         | substitute (Z,x,t2) = Z
         | substitute (T,x,t2) = T
         | substitute (F,x,t2) = F
@@ -362,6 +362,8 @@ struct
   t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T))
 
 
+  APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(F,VAR "y",VAR "x"))),VAR "y"),VAR "z")
+
 
   ALPHA CONVERSION
 
@@ -369,7 +371,7 @@ struct
   alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",ITE(VAR "x",VAR "y",VAR "z"),VAR "z")),0,[],[]);
   alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",VAR "y",VAR "z")),0,[],[]);
   alphaConversion (LAMBDA(VAR "x",ITE(VAR "x",LAMBDA(VAR "y",ITE(VAR "x",VAR "y",S (VAR "z"))),VAR "y")),0,[],[])
-
+  
   
 *)
 
@@ -379,6 +381,9 @@ struct
   fun findId ([],x) = ~1
         | findId (MAP(s,value)::t,x) = 
           if(s=x) then value else findId(t,x)
+
+  fun findStr([],x) = "~1"
+      | findStr (MAP(s,value)::t,x) = if(Int.toString(value) = x) then s else findStr(t,x)
 
   fun insert (l,x,v) = if(findId (l,x) = ~1) then MAP(x,v)::l else l
 
@@ -430,4 +435,14 @@ struct
                                                             (APP (t1,t2),c2,temp@new1@new2,new@new1@new2)
                                                           end
 
-  fun revert (t,map) = 
+  fun revert (Z,map) = Z
+      | revert (T,map) = T
+      | revert (F,map) = F
+      | revert (VAR x,map) = VAR (findStr(map,x))
+      | revert (S x,map) = S (revert(x,map))
+      | revert (P x,map) = P (revert (x,map))
+      | revert (IZ x,map) = IZ (revert (x,map))
+      | revert (GTZ x,map) = GTZ(revert (x,map))
+      | revert (ITE (x1,x2,x3),map) = ITE(revert(x1,map),revert(x2,map),revert(x3,map))
+      | revert (LAMBDA(VAR x1,x2),map) = LAMBDA(VAR (findStr(map,x1)),revert(x2,map))
+      | revert (APP(x1,x2),map) = APP(revert(x1,map),revert(x2,map))
