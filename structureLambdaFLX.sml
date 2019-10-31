@@ -330,54 +330,6 @@ fun isWellTyped t =
 
   fun insertMap (l,x,v) = if(findId (l,x) = ~1) then MAP(x,v)::l else l
 
-  fun alphaConversion (VAR x,count,temp,new) = if(findId(temp,x) = ~1) then
-                                                (VAR (Int.toString(count+1)),count+1,insertMap(temp,x,count+1),insertMap(new,x,count+1))
-                                               else (VAR (Int.toString(findId(temp,x))),count,temp,[])
-      | alphaConversion (Z,count,temp,new) = (Z,count,temp,new)
-      | alphaConversion (T,count,temp,new) = (T,count,temp,new)
-      | alphaConversion (F,count,temp,new) = (F,count,temp,new)
-      | alphaConversion (S x,count,temp,new) = let
-                                                val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
-                                              in
-                                                (S t,c,t1,new@n1)
-                                              end
-      | alphaConversion (P x,count,temp,new) = let
-                                                val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
-                                              in
-                                                (P t,c,t1,new@n1)
-                                              end
-      | alphaConversion (IZ x,count,temp,new) = let
-                                                  val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
-                                                in
-                                                  (IZ t,c,t1,new@n1)
-                                                end
-      | alphaConversion (GTZ x,count,temp,new) = let
-                                                    val (t,c,t1,n1) = alphaConversion(x,count,temp,new)
-                                                  in
-                                                    (GTZ t,c,t1,new@n1)
-                                                  end
-      | alphaConversion (ITE (x1,x2,x3),count,temp,new) = let
-                                                            val (t1,c1,temp1,new1) = alphaConversion(x1,count,temp,[])
-                                                            val (t2,c2,temp2,new2) = alphaConversion(x2,c1,temp,[])
-                                                            val (t3,c3,temp3,new3) = alphaConversion(x3,c2,temp,[])
-                                                          in
-                                                            (ITE (t1,t2,t3),c3,temp@new1@new2@new3,new@new1@new2@new3)
-                                                          end
-      | alphaConversion (LAMBDA (VAR x,term1),count,temp,new) = if(findId(temp,x) <> ~1) then raise Not_wellformed
-                                                                else 
-                                                                  let 
-                                                                    val temp2 = insertMap(temp,x,count+1)
-                                                                    val (t,c,t1,n1) = alphaConversion(term1,count+1,temp2,[])
-                                                                  in
-                                                                    (LAMBDA (VAR (Int.toString(count+1)),t),c,temp2@n1,MAP(x,count+1)::new@n1)
-                                                                  end
-      | alphaConversion (APP (x1,x2),count,temp,new) =  let
-                                                            val (t1,c1,temp1,new1) = alphaConversion(x1,count,temp,[])
-                                                            val (t2,c2,temp2,new2) = alphaConversion(x2,c1,temp,[])
-                                                          in
-                                                            (APP (t1,t2),c2,temp@new1@new2,new@new1@new2)
-                                                          end
-
    (* SCOPE = 0 LOCAL---------------SCOPE = 1 GLOBAL *)
 
   fun listMerge ([],n) = n
@@ -443,7 +395,7 @@ fun isWellTyped t =
       | alphaRenaming (LAMBDA(VAR x1,x2),count,scope,mapG,mapL) = let
                                                                     val (t,mG,mL,c) = if(scope = 0) then
                                                                                         if(findId(mapL,x1) <> ~1) then raise Not_wellformed
-                                                                                        else alphaRenaming(x2,count+1,0,mapG,[MAP(x1,count+1)])
+                                                                                        else alphaRenaming(x2,count+1,0,mapG,MAP(x1,count+1)::mapL)
                                                                                       else alphaRenaming(x2,count+1,0,mapG,[MAP(x1,count+1)])
                                                                   in
                                                                     (LAMBDA (VAR (Int.toString(count+1)),t),mG,listMerge(mapL,mL),c)

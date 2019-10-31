@@ -173,9 +173,11 @@
   alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",ITE(VAR "x",VAR "y",VAR "y"),VAR "z")),0,[],[]);
   alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",ITE(VAR "x",VAR "y",VAR "z"),VAR "z")),0,[],[]);
   alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",VAR "y",VAR "z")),0,[],[]);
-  alphaConversion (LAMBDA(VAR "x",ITE(VAR "x",LAMBDA(VAR "y",ITE(VAR "x",VAR "y",S (VAR "z"))),VAR "y")),0,[],[])
-  
-  
+  alphaConversion (LAMBDA (VAR "x",ITE(VAR "x",LAMBDA(VAR "y",ITE(VAR "x",VAR "y",S (VAR "z"))),VAR "y")),0,[],[])
+  APP (LAMBDA(VAR "x",ITE(VAR "x",LAMBDA(VAR "y",ITE(VAR "x",VAR "y",S (VAR "z"))),VAR "y")),VAR "y")
+  APP(APP(LAMBDA(VAR "x",(ITE(VAR "x",VAR "y",VAR "y"))),VAR "x"),VAR "x")
+  APP(LAMBDA(VAR "x",S (VAR "x")),ITE (LAMBDA(VAR "x",LAMBDA (VAR "y",VAR "z")),LAMBDA(VAR "y",VAR "x"),Z))
+
 *)
 
  datatype temp = 
