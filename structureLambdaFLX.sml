@@ -378,6 +378,78 @@ fun isWellTyped t =
                                                             (APP (t1,t2),c2,temp@new1@new2,new@new1@new2)
                                                           end
 
+   (* SCOPE = 0 LOCAL---------------SCOPE = 1 GLOBAL *)
+
+  fun listMerge ([],n) = n
+      | listMerge (m,[]) = m
+      | listMerge (h::t,n) = let
+                              fun exists (x,[]) = 0
+                                  | exists (MAP(var1,id1),MAP(var2,id2)::t) = 
+                                      if(var1 = var2 andalso id1 = id2) then 1
+                                      else exists(MAP(var1,id1),t)
+                            in
+                              if(exists(h,n) = 0) then listMerge(t,h::n)
+                              else listMerge(t,n)
+                            end
+
+  fun alphaRenaming (VAR x,count,scope,mapG,mapL) = if(scope = 1 andalso findId(mapG,x) <> ~1) 
+                                                      then (VAR (Int.toString(findId(mapG,x))),mapG,mapL,count)
+                                                    else if(scope = 1 andalso findId(mapG,x) = ~1)
+                                                      then (VAR (Int.toString(count+1)),insertMap(mapG,x,count+1),mapL,count+1)
+                                                    else if(scope = 0 andalso findId(mapL,x) <> ~1)
+                                                      then (VAR (Int.toString(findId(mapL,x))),mapG,mapL,count)
+                                                    else if(scope = 0 andalso findId(mapG,x) <> ~1)
+                                                      then (VAR (Int.toString(findId(mapG,x))),mapG,mapL,count)
+                                                    else (VAR (Int.toString(count+1)),insertMap(mapG,x,count+1),mapL,count+1)
+      | alphaRenaming (T,count,scope,mapG,mapL) = (T,mapG,mapL,count)
+      | alphaRenaming (F,count,scope,mapG,mapL) = (F,mapG,mapL,count)
+      | alphaRenaming (Z,count,scope,mapG,mapL) = (Z,mapG,mapL,count)
+      | alphaRenaming (P x,count,scope,mapG,mapL) = let
+                                                      val (t,mG,mL,c) = alphaRenaming(x,count,scope,mapG,mapL)
+                                                    in
+                                                      (P t,mG,mL,c)
+                                                    end
+      | alphaRenaming (S x,count,scope,mapG,mapL) = let
+                                                      val (t,mG,mL,c) = alphaRenaming(x,count,scope,mapG,mapL)
+                                                    in
+                                                      (S t,mG,mL,c)
+                                                    end
+      | alphaRenaming (IZ x,count,scope,mapG,mapL) = let
+                                                        val (t,mG,mL,c) = alphaRenaming(x,count,scope,mapG,mapL)
+                                                      in
+                                                        (IZ t,mG,mL,c)
+                                                      end
+      | alphaRenaming (GTZ x,count,scope,mapG,mapL) = let
+                                                        val (t,mG,mL,c) = alphaRenaming(x,count,scope,mapG,mapL)
+                                                      in
+                                                        (GTZ t,mG,mL,c)
+                                                      end
+      | alphaRenaming (ITE (x1,x2,x3),count,scope,mapG,mapL) = let
+                                                                  val (t1,mG1,mL1,c1) = alphaRenaming(x1,count,scope,mapG,mapL)
+                                                                  val (t2,mG2,mL2,c2) = alphaRenaming(x2,c1,scope,mG1,mapL)
+                                                                  val (t3,mG3,mL3,c3) = alphaRenaming(x3,c2,scope,mG2,mapL)
+                                                                  val merge1 = listMerge(mL1,mL2)
+                                                                  val merge2 = listMerge(mL3,merge1)
+                                                                in
+                                                                  (ITE (t1,t2,t3),mG3,merge2,c3)
+                                                                end
+      | alphaRenaming (APP (x1,x2),count,scope,mapG,mapL) = let
+                                                              val (t1,mG1,mL1,c1) = alphaRenaming(x1,count,scope,mapG,mapL)
+                                                              val (t2,mG2,mL2,c2) = alphaRenaming(x2,c1,scope,mG1,mapL)
+                                                              val merge1 = listMerge(mL1,mL2)
+                                                            in
+                                                              (APP (t1,t2),mG2,merge1,c2)
+                                                            end
+      | alphaRenaming (LAMBDA(VAR x1,x2),count,scope,mapG,mapL) = let
+                                                                    val (t,mG,mL,c) = if(scope = 0) then
+                                                                                        if(findId(mapL,x1) <> ~1) then raise Not_wellformed
+                                                                                        else alphaRenaming(x2,count+1,0,mapG,[MAP(x1,count+1)])
+                                                                                      else alphaRenaming(x2,count+1,0,mapG,[MAP(x1,count+1)])
+                                                                  in
+                                                                    (LAMBDA (VAR (Int.toString(count+1)),t),mG,listMerge(mapL,mL),c)
+                                                                  end
+      | alphaRenaming (LAMBDA (_,_),count,scope,mapG,mapL) = raise Not_wellformed
+
   fun revert (Z,map) = Z
       | revert (T,map) = T
       | revert (F,map) = F
