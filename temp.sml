@@ -152,18 +152,24 @@
   val l4 = "(ITE <LAMBDA x[(S y)],(LAMBDA y[(S y)] Z),(S (P Z))>)"
   val l5 = "(ITE <LAMBDA x[(IZ y)],(LAMBDA y[(S y)] Z),(S (P Z))>)"
 
-  t1 = P (ITE (LAMBDA (VAR "x",IZ (S T)),Z,Z)                                            false
-  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))                                 false
-  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z))                                 true
-  t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z))                                true
-  t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T)            true
-  t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T)    false
-  t6 = LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T))                                  true
-  t7 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),IZ Z)                        false
-  t8 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),P (S Z))                     true
-  t9 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),ITE(T,P (S Z),T))            false
-  t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T))                       false
-
+  t1 = P (ITE (LAMBDA (VAR "x",IZ (S T)),Z,Z))                                            false
+  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))                                  false
+  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z))                                  true
+  t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z))                                 false
+  t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T)             false
+  t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T)     false
+  t6 = LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T))                                   true
+  t7 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),IZ Z)                         false
+  t8 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),P (S Z))                      true
+  t9 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),ITE(T,P (S Z),T))             false
+  t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T))                        false
+  t11 = APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(T,VAR "x",VAR "y"))),T),Z)              FALSE
+  t12 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(T,VAR "x",VAR "y"))),T)                     true
+  t13 = APP(VAR "y",VAR "y")                                                              false
+  t14 = APP(LAMBDA(VAR "x",ITE(T,VAR "y",F)),ITE(T,VAR "y",Z))                            false
+  t15 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),T)                               true
+  t16 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),Z)                               false
+ 
 
   APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(F,VAR "y",VAR "x"))),VAR "y"),VAR "z")
 
@@ -251,3 +257,211 @@
       | revert (ITE (x1,x2,x3),map) = ITE(revert(x1,map),revert(x2,map),revert(x3,map))
       | revert (LAMBDA(VAR x1,x2),map) = LAMBDA(VAR (findStr(map,x1)),revert(x2,map))
       | revert (APP(x1,x2),map) = APP(revert(x1,map),revert(x2,map))
+
+
+
+(*--------------------------------------------------------------------------------------------------------*)
+
+    fun checkType (Z,l) = (1,l)
+          | checkType (VAR x,l) = (find(insert(l,x,2),x),insert(l,x,2))
+          | checkType (T,l) = (0,l)
+          | checkType (F,l) = (0,l)
+          | checkType (P (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
+          | checkType (P x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (1,L) else (~2,L)
+                          end
+          | checkType (S (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (1,insert(l,x,1)) else (~2,l)
+          | checkType (S x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (1,L) else (~2,L)
+                          end
+          | checkType (IZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
+          | checkType (IZ x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (0,L) else (~2,L)
+                          end
+                          
+          | checkType (GTZ (VAR x),l) = if (find(insert(l,x,1),x) = 1) then (0,insert(l,x,1)) else (~2,l)
+          | checkType (GTZ x,l) =let
+                            val (n,L) = checkType (x,l)
+                          in
+                            if(n = 1 orelse n = 2) then (0,L) else (~2,L)
+                          end
+          | checkType (ITE (x1,x2,x3),l) = let
+                                        val p1 = if(checkVar(x1) <> "") then insert(l,checkVar x1,0) else l
+                                        val p2 = if(checkVar(x2) <> "") then insert(p1,checkVar x2,2) else p1
+                                        val p3 = if(checkVar(x3) <> "") then insert(p2,checkVar x3,2) else p2
+      (*                                  val (n1,L1) = checkType(x1,p1)
+                                        val (n2,L2) = checkType(x2,p2@L1)
+                                        val (n3,L3) = checkType(x3,p3@L2)  *)
+                                        val (n1,L1) = checkType(x1,p3)
+                                        val (n2,L2) = checkType(x2,L1)
+                                        val (n3,L3) = checkType(x3,L2)
+                                      in
+                                        if((n1 = 0 orelse n1 = 2) andalso n2 = n3) then (n3,L3)
+                                        else if((n1 = 0 orelse n1 = 2) andalso n2<> ~2 andalso n3 <> ~2) then
+                                            if(n2 = 2) then (n3,L3)
+                                            else if(n1 = 2) then (n2,L3)
+                                            else (~2,p3)
+                                        else
+                                          (~2,p3)
+                                      end
+          | checkType (LAMBDA (VAR x,t),l) = checkType(t,l)
+          | checkType (LAMBDA (_,_),l) = (~2,l)
+          | checkType (APP (LAMBDA (VAR x,t1),t2),l) = let
+                                                  val (lmb,lmbList) = checkType(t1,insert(l,x,2))
+                                                  val (app,appList) = checkType(t2,lmbList)
+                                                in
+                                                  if((find(lmbList,x) = app orelse find(lmbList,x) = 2) andalso lmb <> ~2 andalso app <> ~2) then (lmb,appList)
+                                                  else (~2,appList)
+                                                end
+          | checkType(APP (LAMBDA (_,_),_),l) = (~2,l)
+          | checkType(APP (t1,t2),l)=let
+                                  val (n1,L1) = checkType(t1,l)
+                                  val (n2,L2) = checkType(t2,L1)
+                                in
+                                  if(n1 <> ~2 andalso n2 <> ~2) then (n1,L2) else (~2,L2)
+                                end
+
+
+
+
+
+
+
+
+
+| checkType (ITE(x1,x2,x3),l) = let
+                                            val p1 = if(checkVar(x1) <> "" andalso find(l,checkVar(x1)) = ~1) then 
+                                                        insert(l,checkVar x1,0) 
+                                                      else l
+                                            val p2 = if(checkVar(x2) <> "" andalso find(p1,checkVar(x1)) = ~1) then 
+                                                        insert(p1,checkVar x2,3) 
+                                                      else p1
+                                            val p3 = if(checkVar(x3) <> "" andalso find(p2,checkVar(x1)) = ~1) then 
+                                                        insert(p2,checkVar x3,3) 
+                                                      else p2
+                                            val (typ1,i11,i12,L1) = checkType(x1,p3)
+                                            val (typ2,i21,i22,L2) = checkType(x2,L1)
+                                            val (typ3,i31,i32,L3) = checkType(x3,L2)
+                                          in
+                                            if(typ1 = 0) then
+                                              if(typ2 = 2 andalso typ3 <> 2) then (~2,~1,~1,L3)
+                                              else if (typ2 <> 2 andalso typ3 = 2) then (~2,~1,~1,L3)
+                                              if(typ2 <> 2 andalso typ3 <> 2) then 
+                                                if(typ2 = typ3) then (typ2,~1,~1,L3)
+                                                else if(typ2 = 3 andalso checkVar(x2) <> "") then (typ3,~1,~1,update(L3,x2,typ3,[]))
+                                                else if(typ2 = 3 andalso checkVar(x2) = "") then (~2,~1,~1,L3)
+                                                else if(typ3 = 3 andalso checkVar(x3) <> "") then (typ2,~1,~1,update(L3,x3,typ2,[]))
+                                                else (~2,~1,~1,L3)
+                                              else functionCheck(i21,i31,i22,i32,L3)
+
+                                              if(typ2 = typ3 andalso i21 = i31 andalso i22 = i32) then (typ2,i21,i22,L3)
+                                              else if(typ2 = 3 )
+                                            else if(typ1 = 3) then
+
+                                            else (~2,~1,~1,L3)
+                                          end
+
+
+
+      fun checkType (Z,l) = (1,~1,~1,l)
+          | checkType (T,l) = (0,~1,~1,l)
+          | checkType (F,l) = (0,~1,~1,l)
+          | checkType (VAR x,l) = if(find(l,x) = ~1) then (3,~1,~1,insert(l,x,3))
+                                  else (find(l,x),~1,~1,l)
+          | checkType (P (VAR x),l) = if(find(l,x) = ~1) then (1,~1,~1,insert(l,x,1))
+                                      else if(find(l,x) = 1) then (1,~1,~1,l)
+                                      else if(find(l,x) = 3) then (1,~1,~1,update(l,x,1,[]))
+                                      else (~2,~1,~1,l)
+          | checkType (P x,l) = let
+                                  val (typ,i1,i2,L) = checkType (x,l)
+                                in
+                                  if(typ = 1 orelse typ = 3) then (1,~1,~1,L) else (~2,~1,~1,L)
+                                end
+          | checkType (S (VAR x),l) = if(find(l,x) = ~1) then (1,~1,~1,insert(l,x,1))
+                                      else if(find(l,x) = 1) then (1,~1,~1,l)
+                                      else if(find(l,x) = 3) then (1,~1,~1,update(l,x,1,[]))
+                                      else (~2,~1,~1,l)
+          | checkType (S x,l) = let
+                                  val (typ,i1,i2,L) = checkType (x,l)
+                                in
+                                  if(typ = 1 orelse typ = 3) then (1,~1,~1,L) else (~2,~1,~1,L)
+                                end
+          | checkType (IZ (VAR x),l) = if(find(l,x) = ~1) then (0,~1,~1,insert(l,x,1))
+                                      else if(find(l,x) = 1) then (0,~1,~1,l)
+                                      else if(find(l,x) = 3) then (0,~1,~1,update(l,x,1,[]))
+                                      else (~2,~1,~1,l) 
+          | checkType (IZ x,l) = let
+                                  val (typ,i1,i2,L) = checkType (x,l)
+                                in
+                                  if(typ = 1 orelse typ = 3) then (0,~1,~1,L) else (~2,~1,~1,L)
+                                end
+          | checkType (GTZ (VAR x),l) = if(find(l,x) = ~1) then (0,~1,~1,insert(l,x,1))
+                                      else if(find(l,x) = 1) then (0,~1,~1,l)
+                                      else if(find(l,x) = 3) then (0,~1,~1,update(l,x,1,[]))
+                                      else (~2,~1,~1,l) 
+          | checkType (GTZ x,l) = let
+                                    val (typ,i1,i2,L) = checkType (x,l)
+                                  in
+                                    if(typ = 1 orelse typ = 3) then (0,~1,~1,L) else (~2,~1,~1,L)
+                                  end
+          | checkType (ITE (x1,x2,x3),l) = let
+                                              val p1 = if(checkVar(x1) <> "" andalso find(l,checkVar(x1)) = ~1) then 
+                                                        insert(l,checkVar x1,0) 
+                                                      else l
+                                              val p2 = if(checkVar(x2) <> "" andalso find(p1,checkVar(x1)) = ~1) then 
+                                                        insert(p1,checkVar x2,3) 
+                                                      else p1
+                                              val p3 = if(checkVar(x3) <> "" andalso find(p2,checkVar(x1)) = ~1) then 
+                                                        insert(p2,checkVar x3,3) 
+                                                      else p2
+                                              val (typ1,i11,i12,L1) = checkType (x1,p3)
+                                              val (typ2,i21,i22,L2) = checkType (x2,L1)
+                                              val (typ3,i31,i32,L3) = checkType (x3,L2)
+                                            in
+                                              if(typ1 = 0 orelse typ1 = 3) then
+                                                if(typ2 = 2 orelse typ3 = 2) then (~2,~1,~1,L3) 
+                                                else if(typ2 = typ3) then (typ2,~1,~1,L3)
+                                                else if(typ2 = 3) then
+                                                  if(checkVar(x2) <> "") then (typ3,~1,~1,update(L3,checkVar(x2),typ3,[]))
+                                                  else (typ3,~1,~1,L3)
+                                                else if(checkVar(x3) <> "") then (typ2,~1,~1,update(L3,checkVar(x3),typ2,[]))
+                                                else (typ2,~1,~1,L3)
+                                              else (~2,~1,~1,L3) 
+                                            end
+          | checkType (LAMBDA (VAR x1,x2),l) = let
+                                                val (typ,i1,i2,L) = if(find(l,x1) = ~1) then checkType (x2,insert(l,x1,3))  
+                                                                    else checkType (x2,l)
+                                              in
+                                                if(typ = 2) then (2,find(L,x1),i2,L)
+                                                else (2,find(L,x1),typ,L)
+                                              end
+          | checkType (APP (LAMBDA (VAR x1,x2),x3),l) = let
+                                                      val (typ2,i21,i22,L2) = checkType (x3,l)
+                                                      val (typ1,i11,i12,L1) = if(find(l,x1) = ~1)
+                                                                                if(typ2 <> 2) then
+                                                                                  checkType (x2,insert(L2,x1,typ2))
+                                                                                else checkType (x2,insert(L2,x1,i22))
+                                                                              else checkType(x2,L2)
+                                                    in
+                                                      (typ1,i11,i12,L1)
+                                                    end
+          | checkType (APP(APP(x1,x2),x3),l) = let
+                                          val (typ1,i11,i12,L1) = checkType (APP(x1,x2),l)
+                                          val (typ2,i21,i22,L2) = checkType (x3,L1)
+                                          reduce(x1,x2,l)
+                                        in
+                                          if(typ1 <> 2) then (~2,~1,~1,L2)
+                                          else if(typ2 = 2) then
+                                            if(i11 = i21) then ()
+                                            else if(i11 = 3) then
+                                            else  
+                                          else  
+                                        end
+          | checkType (APP(_,_),l) = (~2,~1,~1,l)
+          | checkType (LAMBDA(_,_),l) = (~2,~1,~1,l)
