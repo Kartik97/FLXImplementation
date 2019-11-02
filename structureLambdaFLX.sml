@@ -354,9 +354,13 @@ struct
                                                 else if(typ2 = typ3) then (typ2,~1,~1,L3,Z)
                                                 else if(typ2 <> 3 andalso typ3 <> 3) then (~2,~1,~1,L3,Z) 
                                                 else if(typ2 = 3) then
-                                                  if(checkVar(x2) <> "") then (typ3,~1,~1,update(L3,checkVar(x2),typ3,[]),Z)
+                                                  if(checkVar(x2) <> "") then 
+                                                    if(find(L3,checkVar(x2)) = 3) then (typ3,~1,~1,update(L3,checkVar(x2),typ3,[]),Z)
+                                                    else (~2,~1,~1,L3,Z)
                                                   else (typ3,~1,~1,L3,Z)
-                                                else if(checkVar(x3) <> "") then (typ2,~1,~1,update(L3,checkVar(x3),typ2,[]),Z)
+                                                else if(checkVar(x3) <> "") then 
+                                                  if(find(L3,checkVar(x3)) = 3) then (typ2,~1,~1,update(L3,checkVar(x3),typ2,[]),Z)
+                                                  else (~2,~1,~1,L3,Z)
                                                 else (typ2,~1,~1,L3,Z)
                                               else (~2,~1,~1,L3,Z) 
                                             end
@@ -405,8 +409,8 @@ struct
       val (conv,mapG,mapL,count) = alphaRenaming(t,0,1,[],[])
       val (n,i1,i2,l,t) = checkType(conv,[])
   in
-       if(n = ~2) then false else true
-(*      (n,i1,i2,l,t)  *)
+       if(n = ~2) then false else true 
+  (*    (n,i1,i2,l,t)  *)
   end
 
 

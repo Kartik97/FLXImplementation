@@ -170,9 +170,18 @@
   t15 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),T)                               true
   t16 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),Z)                               false
  
+  t17 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "y",VAR "y"))),LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "x",VAR "y"))))
 
   APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(F,VAR "y",VAR "x"))),VAR "y"),VAR "z")
 
+  val n1 = ITE(VAR "x",VAR "y",VAR "y");                                                          true
+  val n2 = ITE(VAR "x",VAR "y",VAR "z");                                                          true
+  val n3 = ITE(VAR "x",ITE(T,VAR "x",F),VAR "z");                                                 true
+  val n4 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",F));                                                 true
+  val n5 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "z"))));                                 false
+  val n6 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "p"))));                                 true
+  val n7 = ITE(VAR "x",IZ (VAR "y"),ITE(T,VAR "z",GTZ(S (VAR "p"))));                             true
+  val n8 = ITE(VAR "x",APP(LAMBDA (VAR "y",LAMBDA(VAR "x",GTZ(S (P (S (S (VAR "y"))))))),F),F);   false
 
   ALPHA CONVERSION
 
