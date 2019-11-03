@@ -177,18 +177,24 @@
   val t20 = APP
     (APP
        (LAMBDA (VAR "x",LAMBDA (VAR "y",APP (VAR "x",VAR "y"))),
-        LAMBDA (VAR "x",VAR "x")),LAMBDA (VAR "x",Z)) ;                                       (*true*)
+        LAMBDA (VAR "x",VAR "x")),LAMBDA (VAR "x",Z)) ;                                           (*true*)
 
   val t21 = APP
        (LAMBDA (VAR "x",LAMBDA (VAR "y",APP (VAR "x",VAR "y"))),
-        LAMBDA (VAR "x",VAR "x"))                                                               (*true*)
+        LAMBDA (VAR "x",VAR "x"))                                                                 (*true*)
+  val t22 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "x",VAR "x"))),LAMBDA (VAR "x",VAR "x"))    (* true *)
+  val t23 = APP(LAMBDA(VAR "x",APP(VAR "x",VAR "x")),Z)                                           (* false *)
+  val t24 = APP(VAR "x",VAR "y");                                                                 (* true *)
+  val t25 = LAMBDA(VAR "x",APP(VAR "z",VAR "y"));                                                 (* true *)
+  val t26 = APP(APP(VAR "x",VAR "y"),VAR "z");                                                    (* true *)
+
 
   val n1 = ITE(VAR "x",VAR "y",VAR "y");                                                          (* true *)
   val n2 = ITE(VAR "x",VAR "y",VAR "z");                                                          (* true *)
   val n3 = ITE(VAR "x",ITE(T,VAR "x",F),VAR "z");                                                 (* true *)
   val n4 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",F));                                                 (* true *)
   val n5 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "z"))));                                 (* false *)
-  val n6 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "p"))));                                 (* true *)
+  val n6 = ITE(VAR "x",VAR "y",ITE(F,VAR "z",GTZ (S (VAR "p"))));                                 (* true *)
   val n7 = ITE(VAR "x",IZ (VAR "y"),ITE(T,VAR "z",GTZ(S (VAR "p"))));                             (* true *)
   val n8 = ITE(VAR "x",APP(LAMBDA (VAR "y",LAMBDA(VAR "x",GTZ(S (P (S (S (VAR "y"))))))),F),F);   (* false *)
 
