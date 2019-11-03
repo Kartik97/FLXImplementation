@@ -152,36 +152,45 @@
   val l4 = "(ITE <LAMBDA x[(S y)],(LAMBDA y[(S y)] Z),(S (P Z))>)"
   val l5 = "(ITE <LAMBDA x[(IZ y)],(LAMBDA y[(S y)] Z),(S (P Z))>)"
 
-  t1 = P (ITE (LAMBDA (VAR "x",IZ (S T)),Z,Z))                                            false
-  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T))                                  false
-  t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z))                                  true
-  t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z))                                 false
-  t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T)             false
-  t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T)     false
-  t6 = LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T))                                   true
-  t7 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),IZ Z)                         false
-  t8 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),P (S Z))                      true
-  t9 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),ITE(T,P (S Z),T))             false
-  t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T))                        false
-  t11 = APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(T,VAR "x",VAR "y"))),T),Z)              FALSE
-  t12 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(T,VAR "x",VAR "y"))),T)                     true
-  t13 = APP(VAR "y",VAR "y")                                                              false
-  t14 = APP(LAMBDA(VAR "x",ITE(T,VAR "y",F)),ITE(T,VAR "y",Z))                            false
-  t15 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),T)                               true
-  t16 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),Z)                               false
+  val t1 = P (ITE (LAMBDA (VAR "x",IZ (S T)),Z,Z));                                          (*false*)
+  val t18 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),T));                                 (*false*) 
+  val t2 = P (APP (LAMBDA (VAR "x",ITE(T,S (VAR "x"),Z)),Z)) ;                                 (*true*)
+  val t3 = IZ (ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)) ;                               (*false*) 
+  val t4 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P Z),Z)),T);             (*false*)
+  val t5 = APP (LAMBDA (VAR "y",ITE (LAMBDA (VAR "x",IZ (VAR "x")),S (P (VAR "y")),Z)),T);    (*false*) 
+  val t6 = LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T));                                   (*true*)
+  val t7 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),IZ Z);                         (*false*)
+  val t8 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),P (S Z));                      (*true*)
+  val t9 = APP(LAMBDA (VAR "x",ITE(IZ (P(S (VAR "x"))),IZ Z,T)),ITE(T,P (S Z),T));             (*false*)
+  val t10 = APP(LAMBDA (VAR "x",ITE(VAR "x",IZ Z,T)),ITE(T,P (S Z),T));                        (*false*)
+  val t11 = APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(T,VAR "x",VAR "y"))),T),Z);              (*FALSE*)
+  val t12 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(T,VAR "x",VAR "y"))),T);                     (*true*)
+  val t13 = APP(VAR "y",VAR "y");                                                              (*false*)
+  val t14 = APP(LAMBDA(VAR "x",ITE(T,VAR "y",F)),ITE(T,VAR "y",Z));                            (*false*)
+  val t15 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),T);                               (*true*)
+  val t16 = APP(LAMBDA(VAR "x",ITE(VAR "y",VAR "y",VAR "x")),Z);                               (*false*)
  
-  t17 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "y",VAR "y"))),LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "x",VAR "y"))))
+  val t17 = APP(LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "y",VAR "y"))),LAMBDA(VAR "x",LAMBDA(VAR "y",APP(VAR "x",VAR "y")))); (*false*)
+  
+  val t19 = APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(F,VAR "y",VAR "x"))),VAR "y"),VAR "z")  ; (*true*)
 
-  APP(APP(LAMBDA(VAR "x",LAMBDA(VAR "y",ITE(F,VAR "y",VAR "x"))),VAR "y"),VAR "z")
+  val t20 = APP
+    (APP
+       (LAMBDA (VAR "x",LAMBDA (VAR "y",APP (VAR "x",VAR "y"))),
+        LAMBDA (VAR "x",VAR "x")),LAMBDA (VAR "x",Z)) ;                                       (*true*)
 
-  val n1 = ITE(VAR "x",VAR "y",VAR "y");                                                          true
-  val n2 = ITE(VAR "x",VAR "y",VAR "z");                                                          true
-  val n3 = ITE(VAR "x",ITE(T,VAR "x",F),VAR "z");                                                 true
-  val n4 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",F));                                                 true
-  val n5 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "z"))));                                 false
-  val n6 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "p"))));                                 true
-  val n7 = ITE(VAR "x",IZ (VAR "y"),ITE(T,VAR "z",GTZ(S (VAR "p"))));                             true
-  val n8 = ITE(VAR "x",APP(LAMBDA (VAR "y",LAMBDA(VAR "x",GTZ(S (P (S (S (VAR "y"))))))),F),F);   false
+  val t21 = APP
+       (LAMBDA (VAR "x",LAMBDA (VAR "y",APP (VAR "x",VAR "y"))),
+        LAMBDA (VAR "x",VAR "x"))                                                               (*true*)
+
+  val n1 = ITE(VAR "x",VAR "y",VAR "y");                                                          (* true *)
+  val n2 = ITE(VAR "x",VAR "y",VAR "z");                                                          (* true *)
+  val n3 = ITE(VAR "x",ITE(T,VAR "x",F),VAR "z");                                                 (* true *)
+  val n4 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",F));                                                 (* true *)
+  val n5 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "z"))));                                 (* false *)
+  val n6 = ITE(VAR "x",VAR "y",ITE(T,VAR "z",GTZ (S (VAR "p"))));                                 (* true *)
+  val n7 = ITE(VAR "x",IZ (VAR "y"),ITE(T,VAR "z",GTZ(S (VAR "p"))));                             (* true *)
+  val n8 = ITE(VAR "x",APP(LAMBDA (VAR "y",LAMBDA(VAR "x",GTZ(S (P (S (S (VAR "y"))))))),F),F);   (* false *)
 
   ALPHA CONVERSION
 

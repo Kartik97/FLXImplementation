@@ -373,7 +373,14 @@ struct
                                                 else (~2,~1,~1,L,Z)
                                               end
           | checkType (APP (LAMBDA (VAR x1,x2),x3),l) = let
-                                                      val (typ2,i21,i22,L2,p1) = checkType (x3,l)
+                                                          val (typ1,t3,i4,L2,p2) = checkType(x3,l)
+                                                          val t = substitute(x2,x1,x3)
+                                                          val (typ,i1,i2,L1,p1) = checkType (t,L2)
+                                                        in
+                                                          if(typ <> ~2 andalso typ1 <> ~2) then
+                                                            (typ,i1,i2,L1,t)
+                                                          else (~2,~1,~1,L1,Z)
+                                             (*         val (typ2,i21,i22,L2,p1) = checkType (x3,l)
                                                       val (typ1,i11,i12,L1,p2) = if(find(l,x1) = ~1) then
                                                                                   if(typ2 <> 2) then
                                                                                     checkType (x2,insert(L2,x1,typ2))
@@ -381,10 +388,18 @@ struct
                                                                                 else checkType(x2,L2)
                                                     in
                                                       if(typ2 = ~2 orelse typ1 = ~2) then (~2,~1,~1,L1,Z)
-                                                      else (typ1,i11,i12,L1,substitute(x2,x1,x3))
+                                                      else (typ1,i11,i12,L1,substitute(x2,x1,x3))   *)
                                                     end
           | checkType (APP(APP(x1,x2),x3),l) = let
-                                          val (typ1,i11,i12,L1,p1) = checkType (APP(x1,x2),l)
+                                                val (typ1,i11,i12,L1,p1) = checkType (APP(x1,x2),l)
+                                                val (var,ext) = if(typ1 <> 2) then ("",Z) else checkLambda(p1)
+                                                val (typ2,i1,i2,L2,p2) = if(var <> "") then checkType(substitute(ext,var,x3),L1)
+                                                                        else (~2,~1,~1,L1,Z)
+                                                val (typ3,i3,i4,L3,p3) = checkType(x3,L2)
+                                              in if(typ2 <> ~2 andalso typ3 <> ~2) then
+                                                (typ2,i1,i2,L3,substitute(ext,var,x3))
+                                              else (~2,~1,~1,L3,Z)
+                                     (*     val (typ1,i11,i12,L1,p1) = checkType (APP(x1,x2),l)
                                           val (typ2,i21,i22,L2,p2) = checkType (x3,L1)
                                           val (var,ext) = if(typ1 <> 2) then ("",Z) else checkLambda(p1)
                                           val applied = if(var <> "") then substitute(ext,var,x3) else Z
@@ -401,7 +416,7 @@ struct
                                             if(i11 = i22 orelse i11=3 orelse i22 = 3) then (2,find(L2,str),i12,L2,extracted)
                                               else (~2,~1,~1,L2,Z)
                                           else if(i11 = i22 orelse i11=3 orelse i22=3) then (i12,~1,~1,L2,Z)
-                                                else (~2,~1,~1,L2,Z)
+                                                else (~2,~1,~1,L2,Z)  *)
                                         end
           | checkType (APP(_,_),l) = (~2,~1,~1,l,Z)
           | checkType (LAMBDA(_,_),l) = (~2,~1,~1,l,Z)
@@ -410,7 +425,7 @@ struct
       val (n,i1,i2,l,t) = checkType(conv,[])
   in
        if(n = ~2) then false else true 
-  (*    (n,i1,i2,l,t)  *)
+  (*    (n,i1,i2,l,t)   *)
   end
 
 
